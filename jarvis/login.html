@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Jarvis — Sign In</title>
+  <meta name="description" content="Sign in with your Microsoft account to access Jarvis, your AI assistant for email, calendar, and tasks."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0f14;
+      --surface: #13161e;
+      --border: rgba(255,255,255,0.07);
+      --primary: #6c63ff;
+      --primary-glow: rgba(108,99,255,0.35);
+      --accent: #00d2ff;
+      --text: #f0f2f8;
+      --muted: #7b82a0;
+      --red: #ff5c7c;
+      --radius: 16px;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Animated background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(108,99,255,0.18) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 85%, rgba(0,210,255,0.12) 0%, transparent 55%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 0 0 1px rgba(108,99,255,0.1), 0 32px 64px rgba(0,0,0,0.5);
+      animation: fadeUp 0.5s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Logo */
+    .logo {
+      width: 64px; height: 64px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 28px;
+      font-size: 28px; font-weight: 800; color: #fff;
+      box-shadow: 0 0 32px var(--primary-glow);
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin-bottom: 36px;
+    }
+
+    /* Error banner */
+    .error-box {
+      display: none;
+      background: rgba(255,92,124,0.12);
+      border: 1px solid rgba(255,92,124,0.3);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: var(--red);
+      font-size: 0.85rem;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .error-box.show { display: block; }
+
+    /* Microsoft button */
+    .btn-ms {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      padding: 15px 20px;
+      background: #fff;
+      color: #1a1a2e;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    }
+    .btn-ms:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .btn-ms:active { transform: translateY(0); }
+
+    .ms-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+      width: 21px; height: 21px; flex-shrink: 0;
+    }
+    .ms-grid span { display: block; }
+
+    /* Divider */
+    .divider {
+      display: flex; align-items: center; gap: 12px;
+      color: var(--muted); font-size: 0.8rem;
+      margin: 24px 0;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1;
+      height: 1px; background: var(--border);
+    }
+
+    /* Scope badges */
+    .scopes {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      justify-content: center;
+      margin-bottom: 28px;
+    }
+    .scope {
+      background: rgba(108,99,255,0.1);
+      border: 1px solid rgba(108,99,255,0.2);
+      color: #a99fff;
+      font-size: 0.72rem;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 100px;
+    }
+
+    .footer-note {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.78rem;
+      margin-top: 28px;
+      line-height: 1.6;
+    }
+    .footer-note a { color: var(--primary); text-decoration: none; }
+    .footer-note a:hover { text-decoration: underline; }
+
+    /* Spinner */
+    .spinner {
+      display: none;
+      width: 20px; height: 20px;
+      border: 2.5px solid rgba(26,26,46,0.3);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading .spinner { display: block; }
+    .loading .ms-logo { display: none; }
+    .loading .btn-text { opacity: 0.6; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="card">
+      <div class="logo">J</div>
+      <h1>Welcome to Jarvis</h1>
+      <p class="subtitle">Your AI assistant for Microsoft 365 — email, calendar, and tasks, all in one chat.</p>
+
+      <div class="error-box" id="errorBox"></div>
+
+      <p style="text-align:center;font-size:0.8rem;color:var(--muted);margin-bottom:16px;">Permissions requested</p>
+      <div class="scopes">
+        <span class="scope">📧 Mail.ReadWrite</span>
+        <span class="scope">📅 Calendars.ReadWrite</span>
+        <span class="scope">✅ Tasks.ReadWrite</span>
+        <span class="scope">👤 User.Read</span>
+        <span class="scope">🔄 offline_access</span>
+      </div>
+
+      <a href="/auth/login" class="btn-ms" id="loginBtn" onclick="handleLogin(event)">
+        <span class="ms-logo">
+          <svg width="21" height="21" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+            <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+            <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+            <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+            <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+          </svg>
+        </span>
+        <div class="spinner"></div>
+        <span class="btn-text">Continue with Microsoft</span>
+      </a>
+
+      <p class="footer-note">
+        Emails are <strong>never sent</strong> automatically — Jarvis only drafts them for your review.<br/>
+        Protected by <a href="https://supabase.com" target="_blank">Supabase</a> &amp; Microsoft OAuth 2.0.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Show error from URL param
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const err = params.get('error');
+      if (err) {
+        const box = document.getElementById('errorBox');
+        box.textContent = decodeURIComponent(err);
+        box.classList.add('show');
+      }
+    })();
+
+    function handleLogin(e) {
+      const btn = document.getElementById('loginBtn');
+      btn.classList.add('loading');
+      btn.style.pointerEvents = 'none';
+      // Allow the href navigation to proceed
+    }
+  </script>
+</body>
+</html>
