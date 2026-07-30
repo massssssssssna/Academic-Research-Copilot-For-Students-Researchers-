@@ -1,13 +1,17 @@
 {
-  "functions": {
-    "api/**/*.py": {
-      "includeFiles": "{*.html,static/**}"
-    }
-  },
-  "rewrites": [
+  "builds": [
     {
-      "source": "/(.*)",
-      "destination": "/api/index"
+      "src": "main.py",
+      "use": "@vercel/python",
+      "config": {
+        "includeFiles": ["*.html", "static/**"]
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "main.py"
     }
   ]
 }
