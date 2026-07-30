@@ -33,7 +33,7 @@ class MicrosoftGraphClient:
             raise MicrosoftGraphError("Invalid encrypted access token format", 401)
 
     def _refresh_tokens(self) -> str:
-        """Attempt to refresh tokens using Supabase Auth mechanism."""
+        """Attempt to refresh tokens using Microsoft's OAuth endpoint."""
         session = supabase_db.get_user_session(self.session_id)
         if not session or not session.get("refresh_token_encrypted"):
             raise MicrosoftGraphError("No refresh token available", 401)
@@ -43,15 +43,22 @@ class MicrosoftGraphClient:
         except Exception:
             raise MicrosoftGraphError("Invalid encrypted refresh token format", 401)
             
-        refresh_url = f"{settings.SUPABASE_URL}/auth/v1/token?grant_type=refresh_token"
-        headers = {
-            "Content-Type": "application/json",
-            "apikey": settings.SUPABASE_KEY
+        tenant_id = settings.MICROSOFT_TENANT_ID or "common"
+        refresh_url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
+        
+        payload = {
+            "client_id": settings.MICROSOFT_CLIENT_ID,
+            "client_secret": settings.MICROSOFT_CLIENT_SECRET,
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token,
         }
-        payload = {"refresh_token": refresh_token}
+        
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded"
+        }
         
         with httpx.Client() as client:
-            resp = client.post(refresh_url, json=payload, headers=headers)
+            resp = client.post(refresh_url, data=payload, headers=headers)
             if resp.status_code != 200:
                 # If refresh fails, clear session as they need to re-login
                 supabase_db.delete_session(self.session_id)
@@ -59,13 +66,12 @@ class MicrosoftGraphClient:
                 
             data = resp.json()
             
-            # Formatted similarly to what the callback endpoint creates
             new_tokens = {
-                "access_token": data.get("provider_token") or data.get("access_token", ""),
-                "refresh_token": data.get("provider_refresh_token") or data.get("refresh_token", ""),
-                "id_token": data.get("user", {}).get("id", session.get("user_id")),
-                "email": data.get("user", {}).get("email", session.get("email")),
-                "name": data.get("user", {}).get("user_metadata", {}).get("full_name", session.get("name"))
+                "access_token": data.get("access_token", ""),
+                "refresh_token": data.get("refresh_token", refresh_token),
+                "id_token": session.get("user_id"),
+                "email": session.get("email"),
+                "name": session.get("name")
             }
             supabase_db.save_user_tokens(self.session_id, new_tokens)
             return new_tokens["access_token"]

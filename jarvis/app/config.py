@@ -2,7 +2,7 @@ import os
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 class Settings(BaseSettings):
     APP_NAME: str = "Jarvis Academic Research Copilot"

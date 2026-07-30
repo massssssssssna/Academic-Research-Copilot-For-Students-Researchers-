@@ -8,7 +8,7 @@ from app.graph.client import MicrosoftGraphClient, MicrosoftGraphError
 # ---------------------------------------------------------
 
 class SessionAuthSchema(BaseModel):
-    session_id: str = Field(..., description="The user's authenticated session ID. The system injects this.")
+    session_id: Optional[str] = Field(None, description="System injected. Do not provide.")
 
 # EMAIL SCHEMAS
 class GetEmailsSchema(SessionAuthSchema):
@@ -60,14 +60,14 @@ class DeleteEventSchema(SessionAuthSchema):
 
 # TO-DO SCHEMAS
 class GetTodosSchema(SessionAuthSchema):
-    list_id: str = Field(..., description="The ID of the To-Do list")
+    list_id: Optional[str] = Field(None, description="The ID of the To-Do list. Leave empty for the default list.")
 
 class GetTodoSchema(SessionAuthSchema):
-    list_id: str = Field(..., description="The ID of the To-Do list")
+    list_id: Optional[str] = Field(None, description="The ID of the To-Do list. Leave empty for the default list.")
     task_id: str = Field(..., description="The ID of the task")
 
 class CreateTodoSchema(SessionAuthSchema):
-    list_id: str = Field(..., description="The ID of the To-Do list")
+    list_id: Optional[str] = Field(None, description="The ID of the To-Do list. Leave empty for the default list.")
     title: str = Field(..., description="Title of the task")
     body: Optional[str] = Field("", description="Task description")
     due_date: Optional[str] = Field("", description="Due date (YYYY-MM-DD)")
@@ -75,7 +75,7 @@ class CreateTodoSchema(SessionAuthSchema):
     importance: Optional[str] = Field("", description="Importance (low, normal, high)")
 
 class UpdateTodoSchema(SessionAuthSchema):
-    list_id: str = Field(..., description="The ID of the To-Do list")
+    list_id: Optional[str] = Field(None, description="The ID of the To-Do list. Leave empty for the default list.")
     task_id: str = Field(..., description="The ID of the task to update")
     title: Optional[str] = Field(None, description="New title")
     body: Optional[str] = Field(None, description="New body")
@@ -83,7 +83,7 @@ class UpdateTodoSchema(SessionAuthSchema):
     status: Optional[str] = Field(None, description="New status (notStarted, inProgress, completed, waitingOnOthers, deferred)")
 
 class DeleteTodoSchema(SessionAuthSchema):
-    list_id: str = Field(..., description="The ID of the To-Do list")
+    list_id: Optional[str] = Field(None, description="The ID of the To-Do list. Leave empty for the default list.")
     task_id: str = Field(..., description="The ID of the task to delete")
 
 
@@ -104,6 +104,15 @@ def _format_error(e: Exception) -> str:
         else:
             return f"Microsoft Graph API Error: {e.message}"
     return f"Unexpected error: {str(e)}"
+
+def _resolve_list_id(client: MicrosoftGraphClient, list_id: Optional[str]) -> str:
+    if not list_id or list_id.lower() == "default":
+        lists_res = client.get_todo_lists()
+        if lists_res and "value" in lists_res and len(lists_res["value"]) > 0:
+            default_list = next((lst for lst in lists_res["value"] if lst.get("wellKnownListName") == "defaultList"), lists_res["value"][0])
+            return default_list["id"]
+        raise Exception("Failed to find any To-Do lists.")
+    return list_id
 
 # ---------------------------------------------------------
 # EMAIL TOOLS
@@ -248,28 +257,30 @@ def get_todo_lists(session_id: str) -> str:
         return _format_error(e)
 
 @tool(args_schema=GetTodosSchema)
-def get_todos(session_id: str, list_id: str) -> str:
+def get_todos(session_id: str, list_id: Optional[str] = None) -> str:
     """Fetch tasks from a specific To-Do list."""
     try:
         client = MicrosoftGraphClient(session_id)
-        return str(client.get_todos(list_id))
+        resolved_list_id = _resolve_list_id(client, list_id)
+        return str(client.get_todos(resolved_list_id))
     except Exception as e:
         return _format_error(e)
 
 @tool(args_schema=GetTodoSchema)
-def get_todo(session_id: str, list_id: str, task_id: str) -> str:
+def get_todo(session_id: str, task_id: str, list_id: Optional[str] = None) -> str:
     """Fetch a specific task from a To-Do list."""
     try:
         client = MicrosoftGraphClient(session_id)
-        return str(client.get_todo(list_id, task_id))
+        resolved_list_id = _resolve_list_id(client, list_id)
+        return str(client.get_todo(resolved_list_id, task_id))
     except Exception as e:
         return _format_error(e)
 
 @tool(args_schema=CreateTodoSchema)
 def create_todo(
     session_id: str,
-    list_id: str,
     title: str,
+    list_id: Optional[str] = None,
     body: Optional[str] = "",
     due_date: Optional[str] = "",
     due_time: Optional[str] = "",
@@ -278,8 +289,9 @@ def create_todo(
     """Create a new task in a To-Do list."""
     try:
         client = MicrosoftGraphClient(session_id)
+        resolved_list_id = _resolve_list_id(client, list_id)
         result = client.create_todo(
-            list_id=list_id,
+            list_id=resolved_list_id,
             title=title,
             body=body,
             due_date=due_date,
@@ -293,8 +305,8 @@ def create_todo(
 @tool(args_schema=UpdateTodoSchema)
 def update_todo(
     session_id: str,
-    list_id: str,
     task_id: str,
+    list_id: Optional[str] = None,
     title: Optional[str] = None,
     body: Optional[str] = None,
     importance: Optional[str] = None,
@@ -303,23 +315,25 @@ def update_todo(
     """Update a specific task in a To-Do list (e.g., mark as completed)."""
     try:
         client = MicrosoftGraphClient(session_id)
+        resolved_list_id = _resolve_list_id(client, list_id)
         payload: Dict[str, Any] = {}
         if title is not None: payload["title"] = title
         if body is not None: payload["body"] = {"contentType": "text", "content": body}
         if importance is not None: payload["importance"] = importance
         if status is not None: payload["status"] = status
 
-        result = client.update_todo(list_id, task_id, payload)
+        result = client.update_todo(resolved_list_id, task_id, payload)
         return f"Successfully updated task. ID: {result.get('id', 'Unknown')}"
     except Exception as e:
         return _format_error(e)
 
 @tool(args_schema=DeleteTodoSchema)
-def delete_todo(session_id: str, list_id: str, task_id: str) -> str:
+def delete_todo(session_id: str, task_id: str, list_id: Optional[str] = None) -> str:
     """Delete a task from a To-Do list."""
     try:
         client = MicrosoftGraphClient(session_id)
-        client.delete_todo(list_id, task_id)
+        resolved_list_id = _resolve_list_id(client, list_id)
+        client.delete_todo(resolved_list_id, task_id)
         return "Successfully deleted task."
     except Exception as e:
         return _format_error(e)

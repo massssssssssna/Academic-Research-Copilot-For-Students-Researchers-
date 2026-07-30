@@ -1,21 +1,43 @@
 import base64
+import json
+import os
+import uuid
+from datetime import datetime, timezone
 from supabase import create_client, Client
 from typing import Optional, Dict, Any, List
 from app.config import settings
 
-# In-Memory Session Store for OAuth tokens (secure server-side)
+# ── Local File-based DB for persistence across server restarts ─────────
+DB_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".data", "local_db.json")
+
+# In-Memory stores
 _SESSION_STORE: Dict[str, Dict[str, Any]] = {}
-
-# In-Memory Conversation Store (avoids Supabase RLS issues with anon key)
-# Structure: { user_id: [ {id, title, updated_at, messages: [...]} ] }
 _CONV_STORE: Dict[str, List[Dict]] = {}
-
-import uuid
-from datetime import datetime, timezone
-
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+def _load_db():
+    global _SESSION_STORE, _CONV_STORE
+    if os.path.exists(DB_FILE):
+        try:
+            with open(DB_FILE, "r") as f:
+                data = json.load(f)
+                _SESSION_STORE = data.get("sessions", {})
+                _CONV_STORE = data.get("conversations", {})
+        except Exception:
+            pass
+
+def _save_db():
+    os.makedirs(os.path.dirname(DB_FILE), exist_ok=True)
+    with open(DB_FILE, "w") as f:
+        json.dump({
+            "sessions": _SESSION_STORE,
+            "conversations": _CONV_STORE
+        }, f, indent=2)
+
+# Load data on startup
+_load_db()
 
 
 class SupabaseService:
@@ -34,7 +56,7 @@ class SupabaseService:
     # ── OAuth Token Store ────────────────────────────────────────────────────
 
     def save_user_tokens(self, session_id: str, tokens: dict) -> None:
-        """Encrypt and store user OAuth tokens server-side (in memory)."""
+        """Encrypt and store user OAuth tokens server-side (in file)."""
         access_token = tokens.get("access_token", "")
         refresh_token = tokens.get("refresh_token", "")
 
@@ -46,14 +68,17 @@ class SupabaseService:
             "refresh_token_encrypted": base64.b64encode(refresh_token.encode()).decode() if refresh_token else "",
             "provider": "microsoft_azure",
         }
+        _save_db()
 
     def get_user_session(self, session_id: str) -> Optional[Dict[str, Any]]:
         return _SESSION_STORE.get(session_id)
 
     def delete_session(self, session_id: str) -> None:
-        _SESSION_STORE.pop(session_id, None)
+        if session_id in _SESSION_STORE:
+            del _SESSION_STORE[session_id]
+            _save_db()
 
-    # ── Conversation CRUD (In-Memory with Supabase fallback) ─────────────────
+    # ── Conversation CRUD (Local with Supabase fallback) ─────────────────
 
     def create_conversation(self, user_id: str, title: str) -> str:
         conv_id = str(uuid.uuid4())
@@ -66,6 +91,7 @@ class SupabaseService:
             "messages": [],
         }
         _CONV_STORE.setdefault(user_id, []).insert(0, conv)
+        _save_db()
 
         # Try to persist to Supabase if service key available
         if self._db_available and settings.SUPABASE_SERVICE_KEY:
@@ -76,12 +102,11 @@ class SupabaseService:
                     "title": title,
                 }).execute()
             except Exception:
-                pass  # fall back to memory
+                pass
 
         return conv_id
 
     def get_conversations(self, user_id: str) -> List[Dict[str, Any]]:
-        # Return from memory first (always up-to-date)
         convs = _CONV_STORE.get(user_id, [])
         if convs:
             return [{"id": c["id"], "title": c["title"], "updated_at": c["updated_at"]} for c in convs]
@@ -121,6 +146,7 @@ class SupabaseService:
         }
         conv["messages"].append(msg)
         conv["updated_at"] = _now()
+        _save_db()
 
         # Try Supabase if service key available
         if self._db_available and settings.SUPABASE_SERVICE_KEY:
@@ -140,6 +166,7 @@ class SupabaseService:
         for i, conv in enumerate(convs):
             if conv["id"] == conversation_id:
                 convs.pop(i)
+                _save_db()
                 return True
         return False
 

@@ -71,7 +71,7 @@ async def chat(payload: ChatPayload, session_id: str = Depends(get_session_id)):
         return {
             "conversation_id": conversation_id,
             "reply": final_message, 
-            "engine": "LangGraph (Groq)"
+            "engine": "LangGraph (Cerebras)"
         }
     except Exception as e:
         # Avoid exposing raw stack traces directly, but return a helpful error
