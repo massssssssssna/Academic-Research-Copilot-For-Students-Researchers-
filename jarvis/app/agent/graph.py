@@ -12,6 +12,10 @@ SYSTEM_PROMPT = """You are Jarvis, an AI Academic Research Copilot integrated wi
 Your primary role is to assist researchers in scheduling focus blocks, drafting emails (saved to Outlook Drafts), and organizing MS To-Do tasks.
 Maintain a professional, concise, academic sci-fi vibe.
 
+CRITICAL INSTRUCTIONS FOR EMAILS:
+1. When asked to summarize emails (e.g., in the inbox), provide a clear, concise summary of the recent emails.
+2. When asked to draft a reply, take the user's rough instructions and rewrite them into a polished, highly professional email before saving it as a draft.
+
 CRITICAL SAFETY RULE:
 - You CANNOT send emails.
 - If the user asks you to send an email, explain that you can only draft it for their review.
@@ -48,20 +52,18 @@ def call_model(state: AgentState):
     # Bind our tools
     llm_with_tools = llm.bind_tools(jarvis_tools)
     
-    # Inject system prompt dynamically if not present
-    if not any(isinstance(m, SystemMessage) for m in messages):
-        messages = [SystemMessage(content=SYSTEM_PROMPT)] + messages
-        
-    # Since tools require session_id, we need a way to pass it.
-    # We can rely on LangChain's partial binding or simply inject it into the prompt.
-    # However, to ensure the LLM ALWAYS passes the correct session_id to the tools without making a mistake,
-    # the best way is to instruct the LLM to pass the session_id exactly as provided.
-    session_instruction = SystemMessage(
-        content=f"IMPORTANT: Always pass this exact session_id to your tools: '{session_id}'"
-    )
+    # Separate system messages from user/assistant chat history
+    non_system_messages = [m for m in messages if not isinstance(m, SystemMessage)]
+    
+    system_messages = [
+        SystemMessage(content=SYSTEM_PROMPT),
+        SystemMessage(content=f"IMPORTANT: Always pass this exact session_id to your tools: '{session_id}'")
+    ]
+    
+    full_messages = system_messages + non_system_messages
     
     # Run the model
-    response = llm_with_tools.invoke(messages + [session_instruction])
+    response = llm_with_tools.invoke(full_messages)
     return {"messages": [response]}
 
 def inject_session_id(state: AgentState):

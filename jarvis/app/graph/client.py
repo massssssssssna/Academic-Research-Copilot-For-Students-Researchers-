@@ -129,11 +129,17 @@ class MicrosoftGraphClient:
     def get_current_user(self):
         return self._request("GET", "/me")
         
-    def get_messages(self, top: int = 10, skip: int = 0, search: Optional[str] = None):
+    def get_messages(self, top: int = 10, skip: int = 0, search: Optional[str] = None, folder: Optional[str] = None):
         params = {"$top": top, "$skip": skip}
         if search:
             params["$search"] = f'"{search}"'
-        return self._request("GET", "/me/messages", params=params)
+        
+        if folder:
+            endpoint = f"/me/mailFolders/{folder}/messages"
+        else:
+            endpoint = "/me/messages"
+            
+        return self._request("GET", endpoint, params=params)
         
     def get_message(self, message_id: str):
         return self._request("GET", f"/me/messages/{message_id}")

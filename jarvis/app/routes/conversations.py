@@ -56,6 +56,22 @@ def get_conversation_messages(conversation_id: str, user_id: str = Depends(get_s
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class ConversationUpdate(BaseModel):
+    title: str
+
+@router.patch("/{conversation_id}")
+@router.put("/{conversation_id}")
+def rename_conversation(conversation_id: str, payload: ConversationUpdate, user_id: str = Depends(get_session_user_id)):
+    try:
+        success = supabase_db.rename_conversation(user_id, conversation_id, payload.title)
+        if not success:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        return {"status": "renamed", "title": payload.title}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.delete("/{conversation_id}")
 def delete_conversation(conversation_id: str, user_id: str = Depends(get_session_user_id)):
     try:
@@ -67,3 +83,4 @@ def delete_conversation(conversation_id: str, user_id: str = Depends(get_session
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+

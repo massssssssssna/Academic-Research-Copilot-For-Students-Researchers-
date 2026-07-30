@@ -6,6 +6,8 @@ Jarvis is a modular FastAPI application acting as an AI Academic Copilot. It int
 Jarvis is designed to act as an autonomous assistant for academic researchers, managing their inbox, calendar, and task lists. Through natural language interactions, researchers can ask Jarvis to organize their schedules, read recent emails, draft replies, and add to-dos. The system enforces strict security and permissions (no automatic email sending allowed).
 
 ## 🏗️ Architecture
+For a detailed step-by-step breakdown of how the AI processes emails, drafts professional replies, and manages calendar events/To-Dos, please read the newly added [architecture.md](architecture.md).
+
 The backend is structured to isolate responsibilities:
 - **FastAPI**: Serves the REST API and static HTML frontend.
 - **Supabase**: Handles the initial Microsoft Azure OAuth flow and securely stores user conversations, messages, and encrypted Microsoft tokens.
