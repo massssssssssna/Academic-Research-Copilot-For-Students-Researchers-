@@ -51,8 +51,12 @@ def call_model(state: AgentState):
     # Separate system messages from user/assistant chat history
     non_system_messages = [m for m in messages if not isinstance(m, SystemMessage)]
     
+    from datetime import datetime, timezone
+    now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    
     system_messages = [
         SystemMessage(content=SYSTEM_PROMPT),
+        SystemMessage(content=f"Current Date & Time context: {now_utc}. Default timezone unless specified is Asia/Karachi (PKT, UTC+5) or UTC."),
         SystemMessage(content=f"IMPORTANT: Always pass this exact session_id to your tools: '{session_id}'")
     ]
     
