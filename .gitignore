@@ -7,3 +7,4 @@ secrets/
 credentials/
 *.log
 .DS_Store
+cloudflared.exe

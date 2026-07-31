@@ -14,7 +14,6 @@ class SessionAuthSchema(BaseModel):
 class GetEmailsSchema(SessionAuthSchema):
     top: int = Field(10, description="Number of emails to fetch")
     search: Optional[str] = Field(None, description="Optional search query")
-    folder: Optional[str] = Field("inbox", description="The email folder to search in (e.g. 'inbox', 'drafts', 'sentitems'). Defaults to 'inbox'.")
 
 class GetEmailSchema(SessionAuthSchema):
     message_id: str = Field(..., description="The ID of the email message to fetch")
@@ -120,11 +119,11 @@ def _resolve_list_id(client: MicrosoftGraphClient, list_id: Optional[str]) -> st
 # ---------------------------------------------------------
 
 @tool(args_schema=GetEmailsSchema)
-def get_emails(session_id: str, top: int = 10, search: Optional[str] = None, folder: Optional[str] = "inbox") -> str:
-    """Fetch the latest emails from a specific folder (inbox, drafts, sentitems)."""
+def get_emails(session_id: str, top: int = 10, search: Optional[str] = None) -> str:
+    """Fetch the latest emails from the user's inbox."""
     try:
         client = MicrosoftGraphClient(session_id)
-        return str(client.get_messages(top=top, search=search, folder=folder))
+        return str(client.get_messages(top=top, search=search))
     except Exception as e:
         return _format_error(e)
 
