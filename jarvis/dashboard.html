@@ -131,6 +131,73 @@
     .btn-outline:hover { background: var(--surface2); border-color: var(--muted); }
     .btn-danger { background: rgba(244, 63, 94, 0.1); color: var(--red); border: 1px solid rgba(244, 63, 94, 0.3); }
     .btn-danger:hover { background: rgba(244, 63, 94, 0.2); }
+    /* Mic button & Voice Animations */
+    .mic-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border-light);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      color: var(--text);
+      margin-right: 4px;
+      flex-shrink: 0;
+      font-size: 1.1rem;
+    }
+    .mic-btn:hover { background: var(--primary-dim); border-color: var(--primary); color: var(--primary); transform: scale(1.05); }
+    .mic-btn.listening {
+      background: #f43f5e !important;
+      color: #ffffff !important;
+      border-color: #f43f5e !important;
+      animation: micPulse 1.5s infinite;
+    }
+    @keyframes micPulse {
+      0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7); transform: scale(1); }
+      50% { box-shadow: 0 0 0 10px rgba(244, 63, 94, 0); transform: scale(1.08); }
+      100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); transform: scale(1); }
+    }
+
+    /* Speaking Avatar Glow */
+    .msg-avatar.speaking {
+      animation: avatarGlow 1.2s infinite ease-in-out alternate;
+    }
+    @keyframes avatarGlow {
+      from { transform: scale(1); box-shadow: 0 0 5px var(--primary); }
+      to { transform: scale(1.15); box-shadow: 0 0 20px var(--accent); }
+    }
+
+    /* Listening badge */
+    .listening-badge {
+      position: absolute;
+      top: -34px;
+      left: 16px;
+      background: rgba(244, 63, 94, 0.95);
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(244, 63, 94, 0.35);
+      animation: badgeSlide 0.25s ease forwards;
+      pointer-events: none;
+      z-index: 5;
+    }
+    @keyframes badgeSlide { from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:translateY(0); } }
+    .listening-badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #fff;
+      animation: pulseDot 1s infinite;
+    }
+    @keyframes pulseDot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.7); } }
 
     /* Forms & Inputs */
     .input-field {
@@ -201,7 +268,7 @@
     .message.user .msg-bubble { background: linear-gradient(135deg, var(--primary), #857dff); color: #fff; border-top-right-radius: 4px; box-shadow: 0 4px 15px var(--primary-dim); }
     
     .input-bar { padding: 20px 30px; border-top: 1px solid var(--border); background: rgba(16,19,26,0.6); backdrop-filter: var(--glass-blur); }
-    .input-wrap { display: flex; gap: 12px; align-items: flex-end; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 16px; padding: 12px 16px; transition: all 0.2s; }
+    .input-wrap { display: flex; gap: 12px; align-items: flex-end; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 16px; padding: 12px 16px; transition: all 0.2s; position: relative; }
     .input-wrap:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-dim); background: rgba(0,0,0,0.4); }
     #messageInput { flex: 1; background: none; border: none; outline: none; color: var(--text); font-family: inherit; font-size: 0.95rem; resize: none; max-height: 150px; min-height: 24px; line-height: 1.5; }
     .send-btn { width: 40px; height: 40px; border-radius: 12px; background: var(--primary); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; color: #fff; flex-shrink: 0; box-shadow: 0 4px 10px var(--primary-dim); }
@@ -242,6 +309,12 @@
         <div class="logo-text">Jarvis</div>
         <div class="logo-sub">AI Copilot</div>
       </div>
+    </div>
+
+    <div style="padding: 0 12px 10px;">
+      <button class="btn btn-primary" style="width: 100%; justify-content: center; gap: 8px; border-radius: 10px; font-weight: 600; padding: 10px;" onclick="newConversation()">
+        <span>➕</span> New Chat
+      </button>
     </div>
 
     <nav class="nav-menu">
@@ -294,6 +367,7 @@
       <div class="input-bar">
         <div class="input-wrap">
           <textarea id="messageInput" placeholder="Ask Jarvis anything..." rows="1" onkeydown="handleKey(event)"></textarea>
+          <button class="mic-btn" id="micBtn" title="Voice input">🎤</button>
           <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
         </div>
       </div>
@@ -424,8 +498,6 @@
         <label>Description</label>
         <textarea id="eventBody" class="input-field" rows="3"></textarea>
       </div>
-      <input type="hidden" id="eventId" />
-    </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('eventModal')">Cancel</button>
       <button class="btn btn-primary" onclick="submitEvent()">Save Event</button>
@@ -440,9 +512,216 @@
   let isLoading = false;
   let currentView = 'chat';
 
+  // ── Voice Assistant System (STT & TTS) ──
+  let recognizer = null;
+  let isListening = false;
+  let userStoppedManually = false;
+  let preferredVoice = null;
+
+  function loadVoices() {
+    if (!('speechSynthesis' in window)) return;
+    const voices = window.speechSynthesis.getVoices();
+    if (!voices || voices.length === 0) return;
+
+    // Prefer Natural / Google / Enhanced English voices
+    preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Enhanced') || v.name.includes('Samantha') || v.name.includes('Zira')))
+      || voices.find(v => v.lang.startsWith('en'))
+      || voices[0];
+  }
+
+  if ('speechSynthesis' in window) {
+    loadVoices();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+  }
+
+  function initSpeechRecognition() {
+    const micBtn = document.getElementById('micBtn');
+    if (!micBtn) return;
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      console.warn('Speech recognition not supported in this browser.');
+      micBtn.title = 'Speech recognition not supported in this browser';
+      return;
+    }
+
+    recognizer = new SpeechRecognition();
+    recognizer.continuous = false;
+    recognizer.interimResults = true;
+    recognizer.lang = 'en-US';
+
+    recognizer.onstart = () => {
+      isListening = true;
+      userStoppedManually = false;
+      micBtn.classList.add('listening');
+      micBtn.setAttribute('title', 'Listening... Click to stop');
+      showListeningBadge(true);
+    };
+
+    recognizer.onresult = (e) => {
+      let interim = '';
+      let final = '';
+
+      for (let i = e.resultIndex; i < e.results.length; ++i) {
+        if (e.results[i].isFinal) {
+          final += e.results[i][0].transcript;
+        } else {
+          interim += e.results[i][0].transcript;
+        }
+      }
+
+      const input = document.getElementById('messageInput');
+      if (input) {
+        if (final) {
+          input.value = final;
+        } else if (interim) {
+          input.value = interim;
+        }
+      }
+
+      if (final) {
+        stopListening();
+        sendMessage();
+      }
+    };
+
+    recognizer.onerror = (e) => {
+      console.error('Speech recognition error:', e.error);
+      isListening = false;
+      micBtn.classList.remove('listening');
+      micBtn.setAttribute('title', 'Voice input');
+      showListeningBadge(false);
+
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        showToast('⚠️ Microphone permission denied. Please allow microphone access.');
+      } else if (e.error === 'no-speech') {
+        if (!userStoppedManually) {
+          showToast('No speech detected. Please try again.');
+        }
+      } else if (e.error !== 'aborted') {
+        showToast(`Speech error: ${e.error}`);
+      }
+    };
+
+    recognizer.onend = () => {
+      isListening = false;
+      micBtn.classList.remove('listening');
+      micBtn.setAttribute('title', 'Voice input');
+      showListeningBadge(false);
+    };
+
+    micBtn.addEventListener('click', toggleListening);
+  }
+
+  function toggleListening() {
+    if (!recognizer) {
+      showToast('Voice recognition is not supported in this browser. Please use Chrome or Edge.');
+      return;
+    }
+
+    if (isListening) {
+      userStoppedManually = true;
+      stopListening();
+    } else {
+      try {
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        recognizer.start();
+      } catch (e) {
+        console.error('Recognizer start error', e);
+      }
+    }
+  }
+
+  function stopListening() {
+    if (recognizer && isListening) {
+      try {
+        recognizer.stop();
+      } catch (e) {}
+    }
+    isListening = false;
+    const micBtn = document.getElementById('micBtn');
+    if (micBtn) {
+      micBtn.classList.remove('listening');
+      micBtn.setAttribute('title', 'Voice input');
+    }
+    showListeningBadge(false);
+  }
+
+  function showListeningBadge(show) {
+    let badge = document.getElementById('listeningBadge');
+    const inputWrap = document.querySelector('.input-wrap');
+    if (!inputWrap) return;
+
+    if (show) {
+      if (!badge) {
+        badge = document.createElement('div');
+        badge.id = 'listeningBadge';
+        badge.className = 'listening-badge';
+        badge.innerHTML = '<span class="dot"></span> Listening...';
+        inputWrap.appendChild(badge);
+      }
+    } else {
+      if (badge) badge.remove();
+    }
+  }
+
+  // Strip code, HTML tags, markdown, and technical jargon before TTS
+  function cleanTextForSpeech(rawText) {
+    if (!rawText) return '';
+    let text = rawText;
+
+    // Remove code blocks
+    text = text.replace(/```[\s\S]*?```/g, ' Code snippet omitted. ');
+    // Remove inline code
+    text = text.replace(/`([^`]+)`/g, '$1');
+    // Remove HTML tags completely
+    text = text.replace(/<[^>]*>/g, ' ');
+    // Convert HTML entities
+    text = text.replace(/&amp;/g, '&')
+               .replace(/&lt;/g, '<')
+               .replace(/&gt;/g, '>')
+               .replace(/&quot;/g, '"')
+               .replace(/&#39;/g, "'");
+    // Remove markdown headers, links, formatting
+    text = text.replace(/^#+\s+/gm, '')
+               .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+               .replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g, '$1')
+               .replace(/^[\s*-+>]+\s+/gm, '');
+    // Remove excess whitespace
+    return text.replace(/\s+/g, ' ').trim();
+  }
+
+  function speak(text, avatarEl = null) {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+
+    const cleanText = cleanTextForSpeech(text);
+    if (!cleanText) return;
+
+    const utter = new SpeechSynthesisUtterance(cleanText);
+    if (preferredVoice) {
+      utter.voice = preferredVoice;
+    }
+    utter.lang = 'en-US';
+    utter.rate = 0.98;
+    utter.pitch = 1.0;
+
+    if (avatarEl) {
+      avatarEl.classList.add('speaking');
+      utter.onend = () => avatarEl.classList.remove('speaking');
+      utter.onerror = () => avatarEl.classList.remove('speaking');
+    }
+
+    window.speechSynthesis.speak(utter);
+  }
+
   async function init() {
     await loadUser();
     await loadConversations();
+    initSpeechRecognition();
   }
 
   async function loadUser() {
@@ -461,30 +740,39 @@
   // ── UI Navigation ──
   function switchView(view) {
     currentView = view;
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    event.currentTarget.classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(el => {
+      if (el.getAttribute('onclick') && el.getAttribute('onclick').includes(`'${view}'`)) {
+        el.classList.add('active');
+      } else {
+        el.classList.remove('active');
+      }
+    });
     
     document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
-    document.getElementById('view-' + view).classList.add('active');
+    const targetView = document.getElementById('view-' + view);
+    if (targetView) targetView.classList.add('active');
 
     const titles = { chat: 'Chat Assistant', email: 'Mailbox', calendar: 'Calendar', todo: 'To-Do Tasks' };
-    document.getElementById('viewTitle').textContent = titles[view];
+    const viewTitle = document.getElementById('viewTitle');
+    if (viewTitle) viewTitle.textContent = titles[view] || 'Chat Assistant';
     
-    document.getElementById('convSection').style.display = view === 'chat' ? 'flex' : 'none';
+    const convSection = document.getElementById('convSection');
+    if (convSection) convSection.style.display = view === 'chat' ? 'flex' : 'none';
     
     const actions = document.getElementById('topbarActions');
-    actions.innerHTML = '';
-    
-    if (view === 'chat') {
-      actions.innerHTML = '<button class="btn btn-outline" style="padding:6px 12px;font-size:0.8rem;" onclick="newConversation()">New Chat</button>';
-    } else if (view === 'email') {
-      actions.innerHTML = '<button class="btn btn-primary" style="padding:6px 12px;font-size:0.8rem;" onclick="openDraftModal()">+ New Draft</button>';
-      loadEmails();
-    } else if (view === 'calendar') {
-      actions.innerHTML = '<button class="btn btn-primary" style="padding:6px 12px;font-size:0.8rem;" onclick="openEventModal()">+ Add Event</button>';
-      loadEvents();
-    } else if (view === 'todo') {
-      loadTodoLists();
+    if (actions) {
+      actions.innerHTML = '';
+      if (view === 'chat') {
+        actions.innerHTML = '<button class="btn btn-outline" style="padding:6px 12px;font-size:0.8rem;" onclick="newConversation()">+ New Chat</button>';
+      } else if (view === 'email') {
+        actions.innerHTML = '<button class="btn btn-primary" style="padding:6px 12px;font-size:0.8rem;" onclick="openDraftModal()">+ New Draft</button>';
+        loadEmails();
+      } else if (view === 'calendar') {
+        actions.innerHTML = '<button class="btn btn-primary" style="padding:6px 12px;font-size:0.8rem;" onclick="openEventModal()">+ Add Event</button>';
+        loadEvents();
+      } else if (view === 'todo') {
+        loadTodoLists();
+      }
     }
   }
 
@@ -501,244 +789,204 @@
       data.value.forEach(msg => {
         const div = document.createElement('div');
         div.className = 'card email-item';
-        div.onclick = () => openEmailModal(msg.id);
-        const sender = msg.sender?.emailAddress?.name || msg.sender?.emailAddress?.address || 'Unknown';
-        const date = new Date(msg.receivedDateTime).toLocaleString();
+        const date = new Date(msg.receivedDateTime).toLocaleDateString(undefined, {month:'short', day:'numeric'});
         div.innerHTML = `
           <div class="email-header">
-            <span class="email-sender">${escHtml(sender)}</span>
-            <span class="email-date">${date}</span>
+            <div class="email-sender">${escHtml(msg.from?.emailAddress?.name || msg.from?.emailAddress?.address || 'Unknown')}</div>
+            <div class="email-date">${date}</div>
           </div>
-          <div class="email-subject">${escHtml(msg.subject || 'No Subject')}</div>
-          <div class="email-preview">${escHtml(msg.bodyPreview || '')}</div>
+          <div class="email-subject">${escHtml(msg.subject || '(No Subject)')}</div>
+          <div class="email-snippet">${escHtml(msg.bodyPreview || '')}</div>
         `;
+        div.onclick = () => openEmailModal(msg);
         list.appendChild(div);
       });
-    } catch(e) { list.innerHTML = '<div style="color:var(--red)">Failed to load emails</div>'; }
-  }
-
-  async function openEmailModal(id) {
-    const body = document.getElementById('emailModalBody');
-    const footer = document.getElementById('emailModalFooter');
-    body.innerHTML = '<div class="loading-spinner"></div>';
-    footer.innerHTML = '';
-    document.getElementById('emailModal').classList.add('active');
-    
-    try {
-      const r = await fetch('/api/emails/' + id);
-      const msg = await r.json();
-      const sender = msg.sender?.emailAddress?.name || msg.sender?.emailAddress?.address || 'Unknown';
-      
-      body.innerHTML = `
-        <div style="margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 16px;">
-          <h3 style="font-size: 1.2rem; color: var(--text); margin-bottom: 8px;">${escHtml(msg.subject || 'No Subject')}</h3>
-          <div style="color: var(--accent); font-weight: 600;">From: ${escHtml(sender)}</div>
-          <div style="color: var(--muted); font-size: 0.8rem; margin-top: 4px;">${new Date(msg.receivedDateTime).toLocaleString()}</div>
-        </div>
-        <div style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 8px; overflow-x: auto;">
-          ${msg.body?.content || 'No content'}
-        </div>
-      `;
-      
-      footer.innerHTML = `
-        <button class="btn btn-outline" onclick="summarizeEmail('${id}')">✨ Summarize with AI</button>
-        <button class="btn btn-primary" onclick="openDraftModal('${id}', '${escHtml(msg.subject)}')">↩ Reply</button>
-      `;
-    } catch(e) { body.innerHTML = 'Error loading email.'; }
-  }
-
-  async function summarizeEmail(id) {
-    closeModal('emailModal');
-    switchView('chat');
-    document.getElementById('messageInput').value = `Summarize the email with ID: ${id}`;
-    sendMessage();
-  }
-
-  function openDraftModal(replyId = '', subject = '') {
-    document.getElementById('draftReplyId').value = replyId;
-    document.getElementById('draftTo').value = '';
-    document.getElementById('draftBody').value = '';
-    
-    if(replyId) {
-      document.getElementById('draftModalTitle').textContent = 'Draft Reply';
-      document.getElementById('draftSubjectGroup').style.display = 'none';
-      document.getElementById('draftTo').parentElement.style.display = 'none';
-    } else {
-      document.getElementById('draftModalTitle').textContent = 'New Draft';
-      document.getElementById('draftSubjectGroup').style.display = 'block';
-      document.getElementById('draftTo').parentElement.style.display = 'block';
-      document.getElementById('draftSubject').value = '';
+    } catch(e) {
+      list.innerHTML = '<div class="empty-state">Failed to load emails</div>';
     }
-    
-    if(document.getElementById('emailModal').classList.contains('active')) closeModal('emailModal');
+  }
+
+  function openEmailModal(msg) {
+    document.getElementById('emailModalBody').innerHTML = `
+      <div style="margin-bottom: 12px; font-weight:600;">From: ${escHtml(msg.from?.emailAddress?.name || '')} &lt;${escHtml(msg.from?.emailAddress?.address || '')}&gt;</div>
+      <div style="margin-bottom: 12px; font-weight:600;">Subject: ${escHtml(msg.subject || '')}</div>
+      <hr style="border:none; border-top:1px solid var(--border); margin: 12px 0;"/>
+      <div style="white-space: pre-wrap;">${escHtml(msg.body?.content || msg.bodyPreview || '')}</div>
+    `;
+    document.getElementById('emailModalFooter').innerHTML = `
+      <button class="btn btn-outline" onclick="closeModal('emailModal')">Close</button>
+      <button class="btn btn-primary" onclick="closeModal('emailModal'); openDraftReply('${msg.id}', '${escHtml(msg.from?.emailAddress?.address || '')}', 'Re: ${escHtml(msg.subject || '')}')">Reply</button>
+      <button class="btn btn-primary" style="background:var(--accent);" onclick="closeModal('emailModal'); summarizeEmail('${msg.id}')">Summarize with AI</button>
+    `;
+    document.getElementById('emailModal').classList.add('active');
+  }
+
+  function openDraftModal() {
+    document.getElementById('draftModalTitle').textContent = 'Compose Draft';
+    document.getElementById('draftTo').value = '';
+    document.getElementById('draftSubject').value = '';
+    document.getElementById('draftBody').value = '';
+    document.getElementById('draftReplyId').value = '';
+    document.getElementById('draftSubjectGroup').style.display = 'block';
+    document.getElementById('draftModal').classList.add('active');
+  }
+
+  function openDraftReply(replyId, to, subject) {
+    document.getElementById('draftModalTitle').textContent = 'Reply to Email';
+    document.getElementById('draftTo').value = to;
+    document.getElementById('draftSubject').value = subject;
+    document.getElementById('draftBody').value = '';
+    document.getElementById('draftReplyId').value = replyId;
+    document.getElementById('draftSubjectGroup').style.display = 'none';
     document.getElementById('draftModal').classList.add('active');
   }
 
   async function submitDraft() {
     const replyId = document.getElementById('draftReplyId').value;
+    const to = document.getElementById('draftTo').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const subject = document.getElementById('draftSubject').value;
     const body = document.getElementById('draftBody').value;
-    
-    let url, payload;
-    if(replyId) {
-      url = `/api/emails/${replyId}/reply-draft`;
-      payload = { body };
-    } else {
-      url = `/api/emails/draft`;
-      const to = document.getElementById('draftTo').value.split(',').map(s=>s.trim()).filter(s=>s);
-      payload = {
-        subject: document.getElementById('draftSubject').value,
-        body: body,
-        to_recipients: to
-      };
-    }
-    
+
     try {
-      const r = await fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload)
-      });
-      if(r.ok) {
-        showToast('Draft created successfully!');
-        closeModal('draftModal');
+      let r;
+      if (replyId) {
+        r = await fetch(`/api/emails/${replyId}/reply-draft`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ comment: body })
+        });
       } else {
-        const err = await r.json();
-        showToast('Error: ' + (err.detail || 'Failed'));
+        r = await fetch('/api/emails/draft', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ to_recipients: to, subject, body_content: body })
+        });
       }
-    } catch(e) { showToast('Network error'); }
+      if(r.ok) {
+        closeModal('draftModal');
+        showToast('Draft created successfully!');
+      } else { showToast('Failed to create draft'); }
+    } catch(e) { showToast('Error creating draft'); }
+  }
+
+  function summarizeEmail(id) {
+    switchView('chat');
+    document.getElementById('messageInput').value = `Summarize the email with ID: ${id}`;
+    sendMessage();
   }
 
   // ── Calendar ──
   async function loadEvents() {
     const list = document.getElementById('calendarList');
     list.innerHTML = '<div class="loading-spinner"></div>';
-    
-    // Get start of today and end of next week
-    const now = new Date();
-    const end = new Date(); end.setDate(end.getDate() + 14);
-    
     try {
-      const r = await fetch(`/api/events?start_datetime=${now.toISOString()}&end_datetime=${end.toISOString()}&top=20`);
+      const r = await fetch('/api/calendar/events');
+      if(!r.ok) throw new Error();
       const data = await r.json();
       list.innerHTML = '';
       if(data.value.length === 0) list.innerHTML = '<div class="empty-state">No upcoming events</div>';
-      
-      data.value.forEach(ev => {
-        const start = new Date(ev.start.dateTime + 'Z');
-        const endD = new Date(ev.end.dateTime + 'Z');
-        
+      data.value.forEach(evt => {
         const div = document.createElement('div');
-        div.className = 'card event-item';
+        div.className = 'card';
+        const start = new Date(evt.start.dateTime).toLocaleString([], {dateStyle:'short', timeStyle:'short'});
+        const end = new Date(evt.end.dateTime).toLocaleString([], {timeStyle:'short'});
         div.innerHTML = `
-          <div class="event-time">
-            <div class="event-time-start">${start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-            <div class="event-time-date">${start.toLocaleDateString([], {month:'short', day:'numeric'})}</div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <div style="font-weight:700; font-size:1.05rem; color:var(--text);">${escHtml(evt.subject)}</div>
+            <div style="font-size:0.8rem; color:var(--accent); font-weight:600;">${start} - ${end}</div>
           </div>
-          <div class="event-details">
-            <div class="event-title">${escHtml(ev.subject || 'Busy')}</div>
-            <div class="event-loc">${ev.location?.displayName ? '📍 ' + escHtml(ev.location.displayName) : ''}</div>
-            <div style="margin-top: 8px; display: flex; gap: 8px;">
-              <button class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem;" onclick="deleteEvent('${ev.id}')">Delete</button>
-            </div>
-          </div>
+          <div style="font-size:0.85rem; color:var(--muted);">${escHtml(evt.location?.displayName || 'No location')}</div>
         `;
         list.appendChild(div);
       });
-    } catch(e) { list.innerHTML = '<div style="color:var(--red)">Failed to load events</div>'; }
+    } catch(e) { list.innerHTML = '<div class="empty-state">Failed to load events</div>'; }
   }
 
   function openEventModal() {
-    document.getElementById('eventId').value = '';
     document.getElementById('eventSubject').value = '';
+    document.getElementById('eventStart').value = '';
+    document.getElementById('eventEnd').value = '';
     document.getElementById('eventLocation').value = '';
-    document.getElementById('eventBody').value = '';
     document.getElementById('eventAttendees').value = '';
-    
-    const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    document.getElementById('eventStart').value = now.toISOString().slice(0,16);
-    now.setHours(now.getHours() + 1);
-    document.getElementById('eventEnd').value = now.toISOString().slice(0,16);
-    
+    document.getElementById('eventBody').value = '';
     document.getElementById('eventModal').classList.add('active');
   }
 
   async function submitEvent() {
-    const payload = {
-      subject: document.getElementById('eventSubject').value,
-      start_datetime: new Date(document.getElementById('eventStart').value).toISOString(),
-      end_datetime: new Date(document.getElementById('eventEnd').value).toISOString(),
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      location: document.getElementById('eventLocation').value,
-      body: document.getElementById('eventBody').value,
-      attendees: document.getElementById('eventAttendees').value.split(',').map(s=>s.trim()).filter(s=>s)
-    };
-    
+    const subject = document.getElementById('eventSubject').value;
+    const start = document.getElementById('eventStart').value;
+    const end = document.getElementById('eventEnd').value;
+    const location = document.getElementById('eventLocation').value;
+    const attendees = document.getElementById('eventAttendees').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const body = document.getElementById('eventBody').value;
+
+    if(!subject || !start || !end) { showToast('Please fill required fields'); return; }
+
     try {
-      const r = await fetch('/api/events', {
+      const r = await fetch('/api/calendar/events', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          subject,
+          start: { dateTime: start, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+          end: { dateTime: end, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+          location: { displayName: location },
+          attendees: attendees.map(e => ({ emailAddress: { address: e } })),
+          body: { content: body, contentType: 'text' }
+        })
       });
       if(r.ok) {
-        showToast('Event created');
         closeModal('eventModal');
         loadEvents();
-      } else { showToast('Error creating event'); }
-    } catch(e) { showToast('Network error'); }
-  }
-
-  async function deleteEvent(id) {
-    if(!confirm('Delete this event?')) return;
-    try {
-      const r = await fetch('/api/events/' + id, {method: 'DELETE'});
-      if(r.ok) { showToast('Event deleted'); loadEvents(); }
+        showToast('Event created!');
+      } else { showToast('Failed to create event'); }
     } catch(e) { showToast('Error'); }
   }
 
-  // ── To-Do ──
+  // ── To-Do Tasks ──
   async function loadTodoLists() {
-    const sel = document.getElementById('todoListSelect');
     try {
-      const r = await fetch('/api/todos/lists');
+      const r = await fetch('/api/todo-lists');
+      if(!r.ok) return;
       const data = await r.json();
-      sel.innerHTML = '';
+      const select = document.getElementById('todoListSelect');
+      select.innerHTML = '';
       data.value.forEach(l => {
         const opt = document.createElement('option');
         opt.value = l.id; opt.textContent = l.displayName;
-        sel.appendChild(opt);
+        select.appendChild(opt);
       });
       if(data.value.length > 0) loadTodos();
-    } catch(e) { showToast('Error loading lists'); }
+    } catch(e) {}
   }
 
   async function loadTodos() {
     const listId = document.getElementById('todoListSelect').value;
+    if(!listId) return;
     const list = document.getElementById('todoList');
     list.innerHTML = '<div class="loading-spinner"></div>';
     try {
-      const r = await fetch('/api/todos?list_id=' + listId);
+      const r = await fetch(`/api/todos?list_id=${listId}`);
+      if(!r.ok) throw new Error();
       const data = await r.json();
       list.innerHTML = '';
-      if(data.value.length === 0) list.innerHTML = '<div class="empty-state">No tasks here</div>';
-      
+      if(data.value.length === 0) list.innerHTML = '<div class="empty-state">No tasks in this list</div>';
       data.value.forEach(t => {
-        const isDone = t.status === 'completed';
         const div = document.createElement('div');
-        div.className = 'todo-item';
+        div.className = 'card';
+        div.style.padding = '12px 16px';
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.gap = '12px';
+        const isDone = t.status === 'completed';
         div.innerHTML = `
-          <div class="todo-checkbox ${isDone ? 'completed' : ''}" onclick="toggleTodo('${t.id}', '${t.status}')"></div>
-          <div class="todo-content">
-            <div class="todo-title ${isDone ? 'completed' : ''}">${escHtml(t.title)}</div>
-            ${t.importance === 'high' ? '<div class="todo-meta" style="color:var(--red)">🔥 High Importance</div>' : ''}
-          </div>
-          <div class="todo-actions">
-            <button class="btn btn-outline" style="padding: 4px; border:none;" onclick="deleteTodo('${t.id}')">🗑️</button>
-          </div>
+          <input type="checkbox" ${isDone?'checked':''} onchange="toggleTodo('${t.id}', '${t.status}')" style="width:18px;height:18px;cursor:pointer;accent-color:var(--primary);"/>
+          <span style="flex:1; font-size:0.95rem; ${isDone?'text-decoration:line-through;color:var(--muted);':''}">${escHtml(t.title)}</span>
+          <button class="conv-action-btn delete" onclick="deleteTodo('${t.id}')">🗑️</button>
         `;
         list.appendChild(div);
       });
-    } catch(e) { list.innerHTML = '<div style="color:var(--red)">Failed to load tasks</div>'; }
+    } catch(e) { list.innerHTML = '<div class="empty-state">Failed to load tasks</div>'; }
   }
 
   async function createTodo() {
@@ -785,20 +1033,23 @@
   function closeModal(id) { document.getElementById(id).classList.remove('active'); }
   function showToast(msg) {
     const t = document.getElementById('toast');
+    if (!t) return;
     t.textContent = msg; t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 3000);
   }
+
   function escHtml(str) {
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
   
-  // ── Chat API (Existing logic) ──
+  // ── Chat API ──
   async function loadConversations() {
     try {
       const r = await fetch('/api/conversations');
       if (!r.ok) return;
       const convs = await r.json();
       const list = document.getElementById('convList');
+      if (!list) return;
       list.innerHTML = '';
       convs.forEach(c => {
         const item = document.createElement('div');
@@ -847,6 +1098,7 @@
   }
 
   async function loadConversation(id, title) {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     currentConvId = id;
     document.getElementById('viewTitle').textContent = title || 'Conversation';
     document.getElementById('chatArea').innerHTML = '';
@@ -856,22 +1108,36 @@
     try {
       const r = await fetch(`/api/conversations/${id}/messages`);
       const msgs = await r.json();
-      msgs.forEach(m => appendMessage(m.role === 'user' ? 'user' : 'assistant', m.content));
+      msgs.forEach(m => appendMessage(m.role === 'user' ? 'user' : 'assistant', m.content, null, false, false));
     } catch(e) {}
+
     await loadConversations();
     scrollToBottom();
   }
 
-  function newConversation() {
+  async function newConversation() {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     currentConvId = null;
-    document.getElementById('chatArea').innerHTML = `
-      <div class="empty-state" id="welcomeScreen" style="margin-top: 10vh;">
-        <div class="empty-icon">🤖</div>
-        <h2 style="font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 12px;">How can I help you today?</h2>
-      </div>`;
+    const input = document.getElementById('messageInput');
+    if (input) input.value = '';
+    
+    const chatArea = document.getElementById('chatArea');
+    if (chatArea) {
+      chatArea.innerHTML = `
+        <div class="empty-state" id="welcomeScreen" style="margin-top: 10vh;">
+          <div class="empty-icon">🤖</div>
+          <h2 style="font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 12px;">How can I help you today?</h2>
+          <p style="max-width: 500px; margin: 0 auto; line-height: 1.6;">I can manage your Microsoft 365 emails, schedule events, and organize your tasks.</p>
+        </div>`;
+    }
+    
     document.querySelectorAll('.conv-item').forEach(i => i.classList.remove('active'));
-    document.getElementById('viewTitle').textContent = 'New Chat';
-    if(currentView !== 'chat') switchView('chat');
+    const viewTitle = document.getElementById('viewTitle');
+    if (viewTitle) viewTitle.textContent = 'New Chat';
+    
+    if (currentView !== 'chat') switchView('chat');
+    await loadConversations();
+    if (input) input.focus();
   }
 
   function handleKey(e) {
@@ -919,7 +1185,7 @@
         document.getElementById('viewTitle').textContent = text.slice(0, 30) + '...';
         await loadConversations();
       }
-      appendMessage('assistant', data.reply);
+      appendMessage('assistant', data.reply, null, true, true);
     } catch(e) {
       document.getElementById(typingId)?.remove();
       appendMessage('assistant', '⚠️ Network error.');
@@ -929,23 +1195,58 @@
     }
   }
 
-  function appendMessage(role, content, id=null) {
+  function appendMessage(role, content, id=null, speakIt=false, animateTyping=false) {
     const area = document.getElementById('chatArea');
     const div = document.createElement('div');
     if(id) div.id = id;
     div.className = `message ${role}`;
-    div.innerHTML = `
-      <div class="msg-avatar">${role === 'assistant' ? 'J' : '👤'}</div>
-      <div class="msg-bubble">${role==='user' ? escHtml(content).replace(/\n/g, '<br>') : content}</div>
-    `;
-    // For assistant, we trust the markdown HTML returned if it's pre-rendered, or we can add a simple markdown parser
-    // Here we'll just insert it as HTML for basic markdown support since the backend doesn't render it. Wait, the previous version used a formatMsg function.
-    if(role === 'assistant' && !content.includes('loading-spinner')) {
-      div.querySelector('.msg-bubble').innerHTML = formatMsg(content);
+
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar';
+    avatar.textContent = role === 'assistant' ? 'J' : '👤';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
+
+    div.appendChild(avatar);
+    div.appendChild(bubble);
+
+    if (role === 'user') {
+      bubble.innerHTML = escHtml(content).replace(/\n/g, '<br>');
+      area.appendChild(div);
+      scrollToBottom();
+    } else if (content.includes('loading-spinner')) {
+      bubble.innerHTML = content;
+      area.appendChild(div);
+      scrollToBottom();
+    } else {
+      area.appendChild(div);
+      const formattedHtml = formatMsg(content);
+
+      if (animateTyping) {
+        bubble.innerHTML = '';
+        let i = 0;
+        const speed = 12;
+        const timer = setInterval(() => {
+          i += 4;
+          if (i >= formattedHtml.length) {
+            bubble.innerHTML = formattedHtml;
+            clearInterval(timer);
+            scrollToBottom();
+          } else {
+            bubble.innerHTML = formattedHtml.slice(0, i);
+            scrollToBottom();
+          }
+        }, speed);
+      } else {
+        bubble.innerHTML = formattedHtml;
+        scrollToBottom();
+      }
+
+      if (speakIt) {
+        speak(content, avatar);
+      }
     }
-    
-    area.appendChild(div);
-    scrollToBottom();
   }
   
   function formatMsg(text) {

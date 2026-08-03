@@ -1,5 +1,5 @@
 from typing import Annotated, Literal
-from langchain_openai import ChatOpenAI
+from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage, AIMessage
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
@@ -38,10 +38,9 @@ def call_model(state: AgentState):
     messages = state.get("messages", [])
     session_id = state.get("session_id", "")
     
-    llm = ChatOpenAI(
-        api_key=settings.GROQ_API_KEY,
-        base_url="https://api.groq.com/openai/v1",
-        model="llama-3.3-70b-versatile",
+    llm = ChatGroq(
+        groq_api_key=settings.GROQ_API_KEY,
+        model_name="llama-3.3-70b-versatile",
         max_tokens=500
     )
     
