@@ -138,7 +138,7 @@ def get_email(session_id: str, message_id: str) -> str:
 
 @tool(args_schema=CreateEmailDraftSchema)
 def create_email_draft(session_id: str, subject: str, content: str, to_recipients: List[str]) -> str:
-    """Create a new email draft. Use this when the user asks to send an email, as we CANNOT send emails directly."""
+    """Create a new email draft in Outlook. ONLY invoke this tool when the user EXPLICITLY asks to draft, write, or compose an email."""
     try:
         client = MicrosoftGraphClient(session_id)
         result = client.create_draft(subject, content, to_recipients)
