@@ -23,6 +23,7 @@ The backend is structured to isolate responsibilities:
 
 ## 🛠️ Tech Stack
 - **Backend Framework**: FastAPI (Python)
+- **Voice Agent Framework**: LiveKit Agents Framework (`livekit-agents`)
 - **Agent Orchestration**: LangGraph & LangChain Core
 - **LLM Provider**: Groq
 - **Database & Auth**: Supabase (PostgreSQL)
