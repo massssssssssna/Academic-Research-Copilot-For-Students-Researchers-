@@ -25,14 +25,19 @@ CRITICAL BEHAVIOR AND TOOL USAGE RULES:
    - If the user explicitly asks you to draft or send an email, create an email draft using `create_email_draft` or `create_reply_draft`.
    - Never draft an email unless requested!
 
-5. TO-DO TASK CREATION & DISPLAY RULES:
-   - When creating a task with a time or date (e.g., "add a task want to go home at 9pm"):
-     * Extract ONLY the clean action name for title (e.g. `title="Go home"`).
-     * NEVER include time or date phrases like "at 9pm", "at 7pm", "today", "tomorrow" inside the title!
-     * Pass the time to `due_time` (e.g. `due_time="21:00"`) and date to `due_date`.
-   - When displaying tasks (e.g., "today task list show me"):
-     * Format and display each task's Title, Due Date/Time, and Status clearly.
-     * If the user asks for "today's tasks", filter and highlight tasks that are due today or overdue.
+5. RELATIVE DATE & DAY RESOLUTION RULES (TASKS & CALENDAR):
+   - Always refer to the REAL-TIME DATE & DAY CONTEXT MAP for resolving relative days ("today", "tomorrow", "yesterday", "on Friday", "this Monday", etc.).
+   - When user specifies a day like "on Friday" or "tomorrow":
+     * Look up the exact YYYY-MM-DD date from the UPCOMING DAYS LOOKUP MAP.
+     * For To-Do tasks: set `due_date` to that YYYY-MM-DD date.
+     * For Calendar events: set `start_time` and `end_time` to that YYYY-MM-DD date with ISO time.
+   - When user says "add a task i want to go home on Friday at 9pm":
+     * Title MUST be clean action ONLY: `title="Go home"`.
+     * NEVER put day/time words like "on Friday", "at 9pm", "today" in the title!
+     * `due_date` = exact Friday YYYY-MM-DD date.
+     * `due_time` = "21:00".
+   - When user says "today task list show me":
+     * Fetch tasks and filter/highlight tasks due today (TODAY's YYYY-MM-DD date) or overdue.
 
 Maintain a sleek, helpful, professional, and natural Jarvis persona. Be concise and smart.
 """
@@ -49,6 +54,32 @@ def should_continue(state: AgentState) -> Literal["tools", "__end__"]:
     # Otherwise, we end and return the final text
     return "__end__"
 
+from datetime import datetime, timedelta, timezone
+
+def get_datetime_context() -> str:
+    """Generates an accurate real-time relative date & day lookup map."""
+    now = datetime.now(timezone.utc)
+    today_str = now.strftime("%Y-%m-%d")
+    today_day = now.strftime("%A")
+    
+    yesterday = now - timedelta(days=1)
+    tomorrow = now + timedelta(days=1)
+    
+    upcoming = []
+    for i in range(1, 8):
+        dt = now + timedelta(days=i)
+        upcoming.append(f"  - {dt.strftime('%A')} ({dt.strftime('%b %d')}): {dt.strftime('%Y-%m-%d')}")
+        
+    return (
+        f"REAL-TIME DATE & DAY CONTEXT MAP:\n"
+        f"- TODAY is {today_day}, {today_str}\n"
+        f"- YESTERDAY was {yesterday.strftime('%A')}, {yesterday.strftime('%Y-%m-%d')}\n"
+        f"- TOMORROW will be {tomorrow.strftime('%A')}, {tomorrow.strftime('%Y-%m-%d')}\n"
+        f"UPCOMING DAYS LOOKUP MAP (Use to convert 'on Friday', 'this Monday', etc. into exact YYYY-MM-DD dates):\n"
+        + "\n".join(upcoming) + "\n"
+        f"Default timezone is Asia/Karachi (PKT, UTC+5) or UTC."
+    )
+
 def call_model(state: AgentState):
     """Invoke the Groq LLM to reason and decide the next action."""
     messages = state.get("messages", [])
@@ -57,12 +88,9 @@ def call_model(state: AgentState):
     # Separate system messages from user/assistant chat history
     non_system_messages = [m for m in messages if not isinstance(m, SystemMessage)]
     
-    from datetime import datetime, timezone
-    now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-    
     system_messages = [
         SystemMessage(content=SYSTEM_PROMPT),
-        SystemMessage(content=f"Current Date & Time context: {now_utc}. Default timezone unless specified is Asia/Karachi (PKT, UTC+5) or UTC."),
+        SystemMessage(content=get_datetime_context()),
         SystemMessage(content=f"IMPORTANT: Always pass this exact session_id to your tools: '{session_id}'")
     ]
     
