@@ -21,6 +21,12 @@ The backend is structured to isolate responsibilities:
 - **To-Do Management**: Full CRUD for Microsoft To-Do task lists.
 - **Persistent Memory**: Retains conversation context and messages in Supabase.
 
+## 📚 Technical Documentation & Diagrams
+- **[Tuning Knobs & Latency Guide](TUNING_KNOBS_AND_LATENCY.md)**: Guide on centralized configuration parameters (`app/config.py`), TTS/STT controls, and latency optimization.
+- **[Empirical Latency Benchmark Report](BENCHMARK_KNOBS_LATENCY_REPORT.md)**: Real live latency measurement tables across 4 knob configurations.
+- **[System Architecture & Diagrams](SYSTEM_ARCHITECTURE_AND_DIAGRAMS.md)**: Visual Mermaid charts for System Architecture, End-to-End Sequence Flow, and Database ER Diagram.
+- **[LiveKit Voice Worker](app/voice_agent.py)**: Real-time multimodal voice agent built using the `livekit-agents` framework.
+
 ## 🛠️ Tech Stack
 - **Backend Framework**: FastAPI (Python)
 - **Voice Agent Framework**: LiveKit Agents Framework (`livekit-agents`)
