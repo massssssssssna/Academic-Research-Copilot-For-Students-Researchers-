@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     # ── API TOOL PAGINATION & PAYLOAD KNOBS ────────────────
     GRAPH_DEFAULT_TOP: int = int(os.getenv("GRAPH_DEFAULT_TOP", "10"))                  # Default items per M365 Graph fetch call
     
+    # Groq API Key
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+    
     # Supabase Settings
     
     # Microsoft OAuth Settings
