@@ -117,10 +117,7 @@ def call_model(state: AgentState):
             return {"messages": [response]}
         except Exception as e:
             last_exception = e
-            err_str = str(e).lower()
-            if "ratelimit" in err_str or "429" in err_str or "badrequest" in err_str or "400" in err_str or "tool_use_failed" in err_str:
-                continue
-            raise e
+            continue
             
     if last_exception:
         raise last_exception
