@@ -229,8 +229,15 @@ class MicrosoftGraphClient:
         payload = {"title": title}
         if body:
             payload["body"] = {"contentType": "text", "content": body}
-        if due_date and due_time:
-            # Microsoft Graph expects a DateTimeTimeZone object for dueDateTime
+        if due_date or due_time:
+            from datetime import datetime, timezone
+            if not due_date:
+                due_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            if not due_time:
+                due_time = "23:59:59"
+            elif len(due_time.split(":")) == 2:
+                due_time = f"{due_time}:00"
+                
             payload["dueDateTime"] = {
                 "dateTime": f"{due_date}T{due_time}",
                 "timeZone": "UTC"

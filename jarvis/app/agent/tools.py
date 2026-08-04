@@ -68,10 +68,10 @@ class GetTodoSchema(SessionAuthSchema):
 
 class CreateTodoSchema(SessionAuthSchema):
     list_id: Optional[str] = Field(None, description="The ID of the To-Do list. Leave empty for the default list.")
-    title: str = Field(..., description="Title of the task")
+    title: str = Field(..., description="Clean action title ONLY (e.g. 'Go home', 'Go out', 'Prepare research slides'). MUST NOT include time/date words like 'at 9pm', 'at 7pm', 'today', 'tomorrow' in the title!")
     body: Optional[str] = Field("", description="Task description")
-    due_date: Optional[str] = Field("", description="Due date (YYYY-MM-DD)")
-    due_time: Optional[str] = Field("", description="Due time (HH:MM)")
+    due_date: Optional[str] = Field("", description="Due date in YYYY-MM-DD format. Infer from user prompt e.g. use today's date if user specifies time like 'at 9pm' or says 'today'.")
+    due_time: Optional[str] = Field("", description="Due time in HH:MM format (24-hour format e.g. '21:00' for 9pm, '19:00' for 7pm, '22:00' for 10pm).")
     importance: Optional[str] = Field("", description="Importance (low, normal, high)")
 
 class UpdateTodoSchema(SessionAuthSchema):
@@ -262,7 +262,21 @@ def get_todos(session_id: str, list_id: Optional[str] = None) -> str:
     try:
         client = MicrosoftGraphClient(session_id)
         resolved_list_id = _resolve_list_id(client, list_id)
-        return str(client.get_todos(resolved_list_id))
+        raw_res = client.get_todos(resolved_list_id)
+        if isinstance(raw_res, dict) and "value" in raw_res:
+            tasks = raw_res["value"]
+            if not tasks:
+                return "No tasks found in your To-Do list."
+            formatted = []
+            for t in tasks:
+                t_title = t.get("title", "Untitled Task")
+                t_status = t.get("status", "notStarted")
+                due_dt = t.get("dueDateTime", {})
+                due_val = due_dt.get("dateTime", "") if isinstance(due_dt, dict) else ""
+                due_info = f" | Due: {due_val[:16].replace('T', ' ')}" if due_val else " | No due date"
+                formatted.append(f"- Title: '{t_title}'{due_info} | Status: {t_status}")
+            return "\n".join(formatted)
+        return str(raw_res)
     except Exception as e:
         return _format_error(e)
 
