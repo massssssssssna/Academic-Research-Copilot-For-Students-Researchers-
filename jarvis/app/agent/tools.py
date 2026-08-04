@@ -24,7 +24,7 @@ class CreateEmailDraftSchema(SessionAuthSchema):
     to_recipients: List[str] = Field(..., description="List of recipient email addresses")
 
 class CreateReplyDraftSchema(SessionAuthSchema):
-    message_id: str = Field(..., description="The ID of the message to reply to")
+    message_id: str = Field(..., description="The exact string ID of the existing email message to reply to. NEVER use this tool if you do not have a valid message_id string.")
     content: str = Field(..., description="Content/body of the reply")
 
 # CALENDAR SCHEMAS
@@ -148,7 +148,7 @@ def create_email_draft(session_id: str, subject: str, content: str, to_recipient
 
 @tool(args_schema=CreateReplyDraftSchema)
 def create_reply_draft(session_id: str, message_id: str, content: str) -> str:
-    """Create a draft reply to an existing email."""
+    """Create a draft reply to an EXISTING email. ONLY invoke if you have a specific, valid message_id string from an existing email."""
     try:
         client = MicrosoftGraphClient(session_id)
         result = client.create_reply_draft(message_id, content)
