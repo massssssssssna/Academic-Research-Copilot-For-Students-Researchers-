@@ -63,11 +63,11 @@ def call_model(state: AgentState):
     
     full_messages = system_messages + non_system_messages
     
-    # Models to try with automatic fallback on RateLimit (429/413) or BadRequest
+    # Models to try with automatic fallback using Tuning Knobs from config
     models_to_try = [
-        "llama-3.3-70b-versatile",
-        "llama-3.1-8b-instant",
-        "mixtral-8x7b-32768"
+        settings.LLM_PRIMARY_MODEL,
+        settings.LLM_FAST_MODEL,
+        settings.LLM_FALLBACK_MODEL
     ]
     
     last_exception = None
@@ -76,7 +76,8 @@ def call_model(state: AgentState):
             llm = ChatGroq(
                 groq_api_key=settings.GROQ_API_KEY,
                 model_name=model_name,
-                max_tokens=400
+                temperature=settings.LLM_TEMPERATURE,
+                max_tokens=settings.LLM_MAX_TOKENS
             )
             llm_with_tools = llm.bind_tools(jarvis_tools)
             response = llm_with_tools.invoke(full_messages)
@@ -84,7 +85,7 @@ def call_model(state: AgentState):
         except Exception as e:
             last_exception = e
             err_str = str(e).lower()
-            if "ratelimit" in err_str or "429" in err_str or "413" in err_str or "badrequest" in err_str or "400" in err_str or "tool_use_failed" in err_str or "tpm" in err_str or "large" in err_str:
+            if "ratelimit" in err_str or "429" in err_str or "badrequest" in err_str or "400" in err_str or "tool_use_failed" in err_str:
                 continue
             raise e
             
