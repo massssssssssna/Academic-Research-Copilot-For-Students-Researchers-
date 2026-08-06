@@ -11,6 +11,8 @@ langchain-openai>=0.1.7
 supabase>=2.3.0
 email-validator>=2.1.1
 langchain-groq>=0.1.3
-livekit-agents>=0.8.0
-livekit-plugins-openai>=0.6.0
-livekit-plugins-silero>=0.6.0
+
+# LiveKit Agents — Multimodal (OpenAI Realtime API)
+# No livekit-plugins-silero needed; Realtime API handles VAD/STT/TTS natively
+livekit-agents>=1.0.0
+livekit-plugins-openai>=1.0.0

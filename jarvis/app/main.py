@@ -11,6 +11,7 @@ from app.routes.emails import router as email_router
 from app.routes.events import router as events_router
 from app.routes.todos import router as todos_router
 from app.routes.conversations import router as conversations_router
+from app.routes.livekit import router as livekit_router
 from app.database.supabase import supabase_db
 
 app = FastAPI(
@@ -35,6 +36,7 @@ app.include_router(email_router)
 app.include_router(events_router)
 app.include_router(todos_router)
 app.include_router(conversations_router)
+app.include_router(livekit_router)
 
 # Serve /static directory (CSS, JS, images)
 if os.path.exists("static"):

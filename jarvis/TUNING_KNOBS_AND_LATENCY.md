@@ -25,6 +25,13 @@ TTS_DEFAULT_VOICE = "alloy"                       # Default TTS voice model
 VAD_THRESHOLD = 0.5                               # Voice Activity Detection sensitivity
 STT_LANGUAGE = "en-US"                            # Speech recognition language code
 
+# ── TURN DETECTION & INTERRUPTION KNOBS ─────────────────
+MINIMUM_DELAY = 0.5                               # Min delay (sec) before turn completion
+MAXIMUM_DELAY = 2.0                               # Max silence delay (sec) before forcing response
+INTERRUPTION_MIN_DURATION_MS = 500                # Min speech duration (ms) for interruption
+INTERRUPTION_MIN_WORDS = 2                        # Min words required to trigger interruption
+INTERRUPTION_FALSE_TIMEOUT_MS = 1000              # Timeout (ms) to resume if false interruption
+
 # ── API TOOL PAGINATION & PAYLOAD KNOBS ────────────────
 GRAPH_DEFAULT_TOP = 10                            # Max items fetched per M365 API call
 ```
@@ -79,6 +86,11 @@ sequenceDiagram
 | **Voice Output** | Speech Rate | `TTS_SPEECH_RATE` | `1.0` | `0.98` | Smooth, natural human pace. Prevents audio buffer stutter. |
 | **Voice Output** | Speech Pitch | `TTS_SPEECH_PITCH` | `1.0` | `1.0` | Natural frequency tone. |
 | **Voice Input** | VAD Sensitivity | `VAD_THRESHOLD` | `0.5` | `0.5` | Detects start/stop speech boundaries instantly (<50ms delay). |
+| **Turn Detection** | Minimum Delay | `MINIMUM_DELAY` | `0.5s` | `0.5s` | Min delay before turn completion; prevents cutting user off. |
+| **Turn Detection** | Maximum Delay | `MAXIMUM_DELAY` | `2.0s` | `2.0s` | Max silence delay before agent forces turn response. |
+| **Interruption** | Min Duration MS | `INTERRUPTION_MIN_DURATION_MS` | `500ms` | `500ms` | Speech duration threshold to trigger smooth TTS interruption. |
+| **Interruption** | Min Words | `INTERRUPTION_MIN_WORDS` | `2` | `2` | Required word count to confirm user wants to barge in. |
+| **Interruption** | False Timeout MS | `INTERRUPTION_FALSE_TIMEOUT_MS` | `1000ms` | `1000ms` | Resume playback timeout if interruption is background noise. |
 | **Tool Execution**| API Item Top Limit| `GRAPH_DEFAULT_TOP` | `50` | `10` | **Reduces API Payload by 80%**. M365 fetch latency drops from ~1.2s to ~280ms. |
 
 ---

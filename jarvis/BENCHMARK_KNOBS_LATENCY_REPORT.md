@@ -51,6 +51,11 @@ LLM_TEMPERATURE = 0.3                            # Reduces randomness; guarantee
 LLM_MAX_TOKENS = 400                             # Optimal token budget; eliminates unnecessary wordiness
 GRAPH_DEFAULT_TOP = 10                            # Fetches 10 items; saves 80% network payload latency
 TTS_SPEECH_RATE = 0.98                            # Smooth playback speed without audio stutter
+MINIMUM_DELAY = 0.5                               # 0.5s turn completion delay buffer
+MAXIMUM_DELAY = 2.0                               # 2.0s max silence timeout before response
+INTERRUPTION_MIN_DURATION_MS = 500                # 500ms speech threshold to interrupt TTS
+INTERRUPTION_MIN_WORDS = 2                        # 2 recognized words to trigger interruption
+INTERRUPTION_FALSE_TIMEOUT_MS = 1000              # 1000ms false alarm recovery timeout
 ```
 
 ### Why Config C is Optimal:

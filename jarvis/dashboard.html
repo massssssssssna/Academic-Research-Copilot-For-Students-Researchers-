@@ -6,6 +6,7 @@
   <title>Jarvis — Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.6.0/dist/livekit-client.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -84,7 +85,7 @@
     .conv-action-btn:hover { color: var(--text); background: rgba(255,255,255,0.12); }
     .conv-action-btn.delete:hover { color: var(--red); background: rgba(255,92,124,0.15); }
 
-    .sidebar-footer { border-top: 1px solid var(--border); padding: 16px 20px; }
+    .sidebar-footer { border-top: 1px solid var(--border); padding: 16px 20px; margin-top: auto; }
     .user-info { display: flex; align-items: center; gap: 12px; overflow: hidden; }
     .avatar {
       width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
@@ -296,6 +297,54 @@
     .loading-spinner { border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--primary); border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* Live Bot Assistant Styling */
+    .live-bot-btn {
+      width: 140px; height: 140px; border-radius: 50%;
+      background: linear-gradient(135deg, rgba(108,99,255,0.2), rgba(0,210,255,0.2));
+      border: 2px solid var(--primary); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 30px var(--primary-glow);
+      position: relative; z-index: 2; outline: none;
+    }
+    .live-bot-btn:hover {
+      transform: scale(1.06);
+      box-shadow: 0 0 50px var(--accent-glow);
+      border-color: var(--accent);
+    }
+    .live-bot-btn.connecting {
+      animation: botSpin 1.5s linear infinite;
+      border-color: #f59e0b;
+      box-shadow: 0 0 30px rgba(245, 158, 11, 0.5);
+    }
+    @keyframes botSpin { 0% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.05) rotate(180deg); } 100% { transform: scale(1) rotate(360deg); } }
+    
+    .live-bot-btn.active {
+      background: linear-gradient(135deg, #10b981, #00d2ff) !important;
+      border-color: #10b981 !important;
+      box-shadow: 0 0 60px rgba(16, 185, 129, 0.6) !important;
+      animation: botPulse 2s infinite ease-in-out;
+    }
+    @keyframes botPulse {
+      0% { transform: scale(1); box-shadow: 0 0 30px rgba(16, 185, 129, 0.5); }
+      50% { transform: scale(1.1); box-shadow: 0 0 60px rgba(0, 210, 255, 0.8); }
+      100% { transform: scale(1); box-shadow: 0 0 30px rgba(16, 185, 129, 0.5); }
+    }
+
+    .orb-waves {
+      position: absolute; width: 140px; height: 140px; border-radius: 50%;
+      border: 2px solid var(--primary-glow); pointer-events: none; opacity: 0;
+      transition: all 0.3s;
+    }
+    .live-bot-btn.active ~ .orb-waves, .orb-waves.active {
+      opacity: 1;
+      animation: waveRipple 2s infinite ease-out;
+    }
+    @keyframes waveRipple {
+      0% { transform: scale(1); opacity: 0.8; }
+      100% { transform: scale(1.8); opacity: 0; }
+    }
+
   </style>
 </head>
 <body>
@@ -319,9 +368,8 @@
 
     <nav class="nav-menu">
       <button class="nav-item active" onclick="switchView('chat')"><span>💬</span> Chat Assistant</button>
+      <button class="nav-item" onclick="switchView('live-assistant')"><span>🎙️</span> Assistant Live</button>
       <button class="nav-item" onclick="switchView('email')"><span>📧</span> Mailbox</button>
-      <button class="nav-item" onclick="switchView('calendar')"><span>📅</span> Calendar</button>
-      <button class="nav-item" onclick="switchView('todo')"><span>✅</span> To-Do</button>
     </nav>
 
     <div class="conv-section" id="convSection">
@@ -373,6 +421,44 @@
       </div>
     </div>
 
+    <!-- LIVE BOT ASSISTANT VIEW -->
+    <div id="view-live-assistant" class="view-container">
+      <div class="content-area" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 75vh; text-align: center;">
+        
+        <div class="live-bot-card" style="background: rgba(16, 19, 26, 0.7); border: 1px solid var(--border-light); border-radius: 24px; padding: 40px 30px; width: 100%; max-width: 520px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); backdrop-filter: var(--glass-blur); position: relative; overflow: hidden;">
+          
+          <!-- Status Badge -->
+          <div id="liveStatusBadge" style="display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); padding: 6px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-bottom: 24px;">
+            <span id="liveStatusDot" style="width: 8px; height: 8px; border-radius: 50%; background: var(--muted2);"></span>
+            <span id="liveStatusText">Ready to Connect</span>
+          </div>
+
+          <h2 style="font-size: 1.6rem; font-weight: 700; color: var(--text); margin-bottom: 8px;">Jarvis Assistant Live</h2>
+          <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 36px; line-height: 1.5;">Touch the bot orb below to start real-time speech interaction with Jarvis voice agent.</p>
+
+          <!-- Interactive Bot Touch Button -->
+          <div style="position: relative; width: 160px; height: 160px; margin: 0 auto 36px; display: flex; align-items: center; justify-content: center;">
+            <div id="liveOrbWaves" class="orb-waves"></div>
+            <button id="liveBotBtn" onclick="toggleLiveBot()" class="live-bot-btn" title="Touch to Start Live Bot">
+              <span id="liveBotIcon" style="font-size: 3.2rem;">🤖</span>
+            </button>
+          </div>
+
+          <!-- Action Subtext -->
+          <div id="liveActionText" style="font-weight: 600; font-size: 1rem; color: var(--text); margin-bottom: 20px;">
+            Touch Bot to Start Realtime Voice Agent
+          </div>
+
+          <!-- Live Conversation Logs / Status -->
+          <div id="liveTranscripts" style="background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 12px; padding: 14px; max-height: 140px; overflow-y: auto; text-align: left; font-size: 0.85rem; color: var(--muted); display: none;">
+            <div id="liveLogs"></div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
     <!-- EMAIL VIEW -->
     <div id="view-email" class="view-container">
       <div class="content-area">
@@ -386,37 +472,7 @@
       </div>
     </div>
 
-    <!-- CALENDAR VIEW -->
-    <div id="view-calendar" class="view-container">
-      <div class="content-area">
-        <div style="display:flex; justify-content: space-between; margin-bottom: 24px; align-items:center;">
-          <h3 style="font-weight: 600;">Upcoming Events</h3>
-        </div>
-        <div id="calendarList" class="list-grid">
-          <!-- Events injected here -->
-        </div>
-      </div>
-    </div>
-
-    <!-- TODO VIEW -->
-    <div id="view-todo" class="view-container">
-      <div class="content-area">
-        <div class="todo-header">
-          <select class="todo-list-select" id="todoListSelect" onchange="loadTodos()"></select>
-        </div>
-        
-        <div class="card" style="margin-bottom: 24px; padding: 16px;">
-          <form onsubmit="event.preventDefault(); createTodo();" style="display: flex; gap: 12px;">
-            <input type="text" id="newTodoTitle" class="input-field" placeholder="Add a new task..." required style="flex: 1;" />
-            <button type="submit" class="btn btn-primary">Add Task</button>
-          </form>
-        </div>
-
-        <div id="todoList" class="list-grid">
-          <!-- Tasks injected here -->
-        </div>
-      </div>
-    </div>
+    <!-- Removed Calendar & To-Do views -->
 
   </main>
 </div>
@@ -464,46 +520,7 @@
   </div>
 </div>
 
-<!-- Event Modal -->
-<div class="modal-overlay" id="eventModal">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title" id="eventModalTitle">Create Event</div>
-      <button class="modal-close" onclick="closeModal('eventModal')">&times;</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label>Subject</label>
-        <input type="text" id="eventSubject" class="input-field" required />
-      </div>
-      <div style="display: flex; gap: 16px;">
-        <div class="form-group" style="flex:1;">
-          <label>Start</label>
-          <input type="datetime-local" id="eventStart" class="input-field" required />
-        </div>
-        <div class="form-group" style="flex:1;">
-          <label>End</label>
-          <input type="datetime-local" id="eventEnd" class="input-field" required />
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Location (Optional)</label>
-        <input type="text" id="eventLocation" class="input-field" />
-      </div>
-      <div class="form-group">
-        <label>Attendees (comma separated emails)</label>
-        <input type="text" id="eventAttendees" class="input-field" />
-      </div>
-      <div class="form-group">
-        <label>Description</label>
-        <textarea id="eventBody" class="input-field" rows="3"></textarea>
-      </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('eventModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="submitEvent()">Save Event</button>
-    </div>
-  </div>
-</div>
+
 
 <div id="toast"></div>
 
@@ -752,26 +769,20 @@
     const targetView = document.getElementById('view-' + view);
     if (targetView) targetView.classList.add('active');
 
-    const titles = { chat: 'Chat Assistant', email: 'Mailbox', calendar: 'Calendar', todo: 'To-Do Tasks' };
+    const titles = { chat: 'Chat Assistant', 'live-assistant': 'Assistant Live', email: 'Mailbox' };
     const viewTitle = document.getElementById('viewTitle');
     if (viewTitle) viewTitle.textContent = titles[view] || 'Chat Assistant';
-    
-    const convSection = document.getElementById('convSection');
-    if (convSection) convSection.style.display = view === 'chat' ? 'flex' : 'none';
     
     const actions = document.getElementById('topbarActions');
     if (actions) {
       actions.innerHTML = '';
       if (view === 'chat') {
         actions.innerHTML = '<button class="btn btn-outline" style="padding:6px 12px;font-size:0.8rem;" onclick="newConversation()">+ New Chat</button>';
+      } else if (view === 'live-assistant') {
+        actions.innerHTML = '<button class="btn btn-primary" style="padding:6px 12px;font-size:0.8rem;" onclick="toggleLiveBot()">⚡ Start Assistant Live</button>';
       } else if (view === 'email') {
         actions.innerHTML = '<button class="btn btn-primary" style="padding:6px 12px;font-size:0.8rem;" onclick="openDraftModal()">+ New Draft</button>';
         loadEmails();
-      } else if (view === 'calendar') {
-        actions.innerHTML = '<button class="btn btn-primary" style="padding:6px 12px;font-size:0.8rem;" onclick="openEventModal()">+ Add Event</button>';
-        loadEvents();
-      } else if (view === 'todo') {
-        loadTodoLists();
       }
     }
   }
@@ -875,159 +886,7 @@
     sendMessage();
   }
 
-  // ── Calendar ──
-  async function loadEvents() {
-    const list = document.getElementById('calendarList');
-    list.innerHTML = '<div class="loading-spinner"></div>';
-    try {
-      const r = await fetch('/api/calendar/events');
-      if(!r.ok) throw new Error();
-      const data = await r.json();
-      list.innerHTML = '';
-      if(data.value.length === 0) list.innerHTML = '<div class="empty-state">No upcoming events</div>';
-      data.value.forEach(evt => {
-        const div = document.createElement('div');
-        div.className = 'card';
-        const start = new Date(evt.start.dateTime).toLocaleString([], {dateStyle:'short', timeStyle:'short'});
-        const end = new Date(evt.end.dateTime).toLocaleString([], {timeStyle:'short'});
-        div.innerHTML = `
-          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-            <div style="font-weight:700; font-size:1.05rem; color:var(--text);">${escHtml(evt.subject)}</div>
-            <div style="font-size:0.8rem; color:var(--accent); font-weight:600;">${start} - ${end}</div>
-          </div>
-          <div style="font-size:0.85rem; color:var(--muted);">${escHtml(evt.location?.displayName || 'No location')}</div>
-        `;
-        list.appendChild(div);
-      });
-    } catch(e) { list.innerHTML = '<div class="empty-state">Failed to load events</div>'; }
-  }
 
-  function openEventModal() {
-    document.getElementById('eventSubject').value = '';
-    document.getElementById('eventStart').value = '';
-    document.getElementById('eventEnd').value = '';
-    document.getElementById('eventLocation').value = '';
-    document.getElementById('eventAttendees').value = '';
-    document.getElementById('eventBody').value = '';
-    document.getElementById('eventModal').classList.add('active');
-  }
-
-  async function submitEvent() {
-    const subject = document.getElementById('eventSubject').value;
-    const start = document.getElementById('eventStart').value;
-    const end = document.getElementById('eventEnd').value;
-    const location = document.getElementById('eventLocation').value;
-    const attendees = document.getElementById('eventAttendees').value.split(',').map(s=>s.trim()).filter(Boolean);
-    const body = document.getElementById('eventBody').value;
-
-    if(!subject || !start || !end) { showToast('Please fill required fields'); return; }
-
-    try {
-      const r = await fetch('/api/calendar/events', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          subject,
-          start: { dateTime: start, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
-          end: { dateTime: end, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
-          location: { displayName: location },
-          attendees: attendees.map(e => ({ emailAddress: { address: e } })),
-          body: { content: body, contentType: 'text' }
-        })
-      });
-      if(r.ok) {
-        closeModal('eventModal');
-        loadEvents();
-        showToast('Event created!');
-      } else { showToast('Failed to create event'); }
-    } catch(e) { showToast('Error'); }
-  }
-
-  // ── To-Do Tasks ──
-  async function loadTodoLists() {
-    try {
-      const r = await fetch('/api/todo-lists');
-      if(!r.ok) return;
-      const data = await r.json();
-      const select = document.getElementById('todoListSelect');
-      select.innerHTML = '';
-      data.value.forEach(l => {
-        const opt = document.createElement('option');
-        opt.value = l.id; opt.textContent = l.displayName;
-        select.appendChild(opt);
-      });
-      if(data.value.length > 0) loadTodos();
-    } catch(e) {}
-  }
-
-  async function loadTodos() {
-    const listId = document.getElementById('todoListSelect').value;
-    if(!listId) return;
-    const list = document.getElementById('todoList');
-    list.innerHTML = '<div class="loading-spinner"></div>';
-    try {
-      const r = await fetch(`/api/todos?list_id=${listId}`);
-      if(!r.ok) throw new Error();
-      const data = await r.json();
-      list.innerHTML = '';
-      if(data.value.length === 0) list.innerHTML = '<div class="empty-state">No tasks in this list</div>';
-      data.value.forEach(t => {
-        const div = document.createElement('div');
-        div.className = 'card';
-        div.style.padding = '12px 16px';
-        div.style.display = 'flex';
-        div.style.alignItems = 'center';
-        div.style.gap = '12px';
-        const isDone = t.status === 'completed';
-        div.innerHTML = `
-          <input type="checkbox" ${isDone?'checked':''} onchange="toggleTodo('${t.id}', '${t.status}')" style="width:18px;height:18px;cursor:pointer;accent-color:var(--primary);"/>
-          <span style="flex:1; font-size:0.95rem; ${isDone?'text-decoration:line-through;color:var(--muted);':''}">${escHtml(t.title)}</span>
-          <button class="conv-action-btn delete" onclick="deleteTodo('${t.id}')">🗑️</button>
-        `;
-        list.appendChild(div);
-      });
-    } catch(e) { list.innerHTML = '<div class="empty-state">Failed to load tasks</div>'; }
-  }
-
-  async function createTodo() {
-    const title = document.getElementById('newTodoTitle').value;
-    const listId = document.getElementById('todoListSelect').value;
-    if(!title || !listId) return;
-    
-    try {
-      const r = await fetch('/api/todos', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ list_id: listId, title: title })
-      });
-      if(r.ok) {
-        document.getElementById('newTodoTitle').value = '';
-        loadTodos();
-      } else { showToast('Failed to add task'); }
-    } catch(e) { showToast('Error'); }
-  }
-
-  async function toggleTodo(id, currentStatus) {
-    const listId = document.getElementById('todoListSelect').value;
-    const newStatus = currentStatus === 'completed' ? 'notStarted' : 'completed';
-    try {
-      await fetch(`/api/todos/${id}?list_id=${listId}`, {
-        method: 'PATCH',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ status: newStatus })
-      });
-      loadTodos();
-    } catch(e) { showToast('Error updating task'); }
-  }
-
-  async function deleteTodo(id) {
-    if(!confirm('Delete task?')) return;
-    const listId = document.getElementById('todoListSelect').value;
-    try {
-      await fetch(`/api/todos/${id}?list_id=${listId}`, { method: 'DELETE' });
-      loadTodos();
-    } catch(e) { showToast('Error'); }
-  }
 
   // ── Utils ──
   function closeModal(id) { document.getElementById(id).classList.remove('active'); }
@@ -1261,6 +1120,131 @@
     area.scrollTop = area.scrollHeight;
   }
   
+  // ── LiveKit WebRTC Realtime Agent Integration ──
+  let liveKitRoom = null;
+  let isLiveBotActive = false;
+
+  async function toggleLiveBot() {
+    if (isLiveBotActive) {
+      await disconnectLiveBot();
+    } else {
+      await connectLiveBot();
+    }
+  }
+
+  async function connectLiveBot() {
+    const btn = document.getElementById('liveBotBtn');
+    const statusText = document.getElementById('liveStatusText');
+    const statusDot = document.getElementById('liveStatusDot');
+    const actionText = document.getElementById('liveActionText');
+    const icon = document.getElementById('liveBotIcon');
+
+    try {
+      if (btn) btn.classList.add('connecting');
+      if (statusText) statusText.textContent = 'Connecting...';
+      if (statusDot) statusDot.style.background = '#f59e0b';
+      if (actionText) actionText.textContent = 'Joining Live Room...';
+
+      // 1. Fetch WebRTC token from backend
+      const r = await fetch('/api/livekit/token?room=jarvis-room');
+      if (!r.ok) {
+        const err = await r.json();
+        throw new Error(err.detail || 'Failed to get LiveKit token');
+      }
+      const data = await r.json();
+
+      // Check if LiveKit Client SDK is loaded
+      if (typeof LivekitClient === 'undefined') {
+        throw new Error('LiveKit WebRTC client SDK is loading... Please try again in a moment.');
+      }
+
+      // 2. Connect to LiveKit Room
+      liveKitRoom = new LivekitClient.Room({
+        adaptiveStream: true,
+        dynacast: true,
+      });
+
+      // Handle track subscribed (agent speaking)
+      liveKitRoom.on(LivekitClient.RoomEvent.TrackSubscribed, (track, publication, participant) => {
+        if (track.kind === LivekitClient.Track.Kind.Audio) {
+          const audioElement = track.attach();
+          document.body.appendChild(audioElement);
+          addLiveLog('🤖 Jarvis Agent is speaking...');
+        }
+      });
+
+      liveKitRoom.on(LivekitClient.RoomEvent.ParticipantConnected, (p) => {
+        addLiveLog(`Participant joined: ${p.identity}`);
+      });
+
+      liveKitRoom.on(LivekitClient.RoomEvent.Disconnected, () => {
+        disconnectLiveBotUI();
+      });
+
+      await liveKitRoom.connect(data.ws_url, data.token);
+
+      // Enable local microphone
+      await liveKitRoom.localParticipant.setMicrophoneEnabled(true);
+
+      isLiveBotActive = true;
+      if (btn) {
+        btn.classList.remove('connecting');
+        btn.classList.add('active');
+      }
+      if (statusText) statusText.textContent = 'LIVE AGENT ACTIVE';
+      if (statusDot) statusDot.style.background = '#10b981';
+      if (actionText) actionText.textContent = 'Tap Again to Stop Call';
+      if (icon) icon.textContent = '🎙️';
+      showToast('⚡ Live Assistant Connected!');
+
+      const transcripts = document.getElementById('liveTranscripts');
+      if (transcripts) transcripts.style.display = 'block';
+      addLiveLog('✅ Connected to LiveKit Room. Say hello to Jarvis!');
+
+    } catch (e) {
+      console.error('LiveBot error:', e);
+      disconnectLiveBotUI();
+      showToast(`⚠️ Voice Error: ${e.message}`);
+    }
+  }
+
+  async function disconnectLiveBot() {
+    if (liveKitRoom) {
+      try {
+        await liveKitRoom.disconnect();
+      } catch (e) {}
+    }
+    disconnectLiveBotUI();
+    showToast('Live Assistant Call Ended.');
+  }
+
+  function disconnectLiveBotUI() {
+    isLiveBotActive = false;
+    liveKitRoom = null;
+    const btn = document.getElementById('liveBotBtn');
+    const statusText = document.getElementById('liveStatusText');
+    const statusDot = document.getElementById('liveStatusDot');
+    const actionText = document.getElementById('liveActionText');
+    const icon = document.getElementById('liveBotIcon');
+
+    if (btn) btn.classList.remove('connecting', 'active');
+    if (statusText) statusText.textContent = 'Ready to Connect';
+    if (statusDot) statusDot.style.background = 'var(--muted2)';
+    if (actionText) actionText.textContent = 'Touch Bot to Start Realtime Voice Agent';
+    if (icon) icon.textContent = '🤖';
+  }
+
+  function addLiveLog(msg) {
+    const logs = document.getElementById('liveLogs');
+    if (!logs) return;
+    const div = document.createElement('div');
+    div.style.marginBottom = '4px';
+    div.textContent = msg;
+    logs.appendChild(div);
+    const container = logs.parentElement;
+    if (container) container.scrollTop = container.scrollHeight;
+  }
+
   async function logout() { window.location.href = '/auth/logout'; }
 
   init();

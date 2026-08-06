@@ -1,84 +1,114 @@
 """
-Jarvis Voice Agent - Powered by LiveKit Agents Framework
-Real-time Multimodal Voice Agent (STT -> LLM/Tools -> TTS)
+Jarvis Multimodal Voice Agent — LiveKit Agents + Deepgram STT + Groq LLM + Cartesia TTS
+======================================================================================
+Architecture:
+  User Microphone → LiveKit Room (WebRTC)
+    → Deepgram STT (Speech-to-Text)
+    → Groq LLM (llama-3.3-70b-versatile reasoning)
+    → Cartesia TTS (Text-to-Speech synthesis)
+    ← Audio streamed back via WebRTC
+
+Environment Variables Required (.env):
+  LIVEKIT_URL          - LiveKit server WebSocket URL
+  LIVEKIT_API_KEY      - LiveKit API key
+  LIVEKIT_API_SECRET   - LiveKit API secret
+  DEEPGRAM_API_KEY     - Deepgram API key (STT)
+  GROQ_API_KEY         - Groq API key (LLM)
+  CARTESIA_API_KEY     - Cartesia API key (TTS)
 """
 
-import asyncio
 import logging
-from typing import Annotated
+import os
+import sys
+import types
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# ── Windows Compatibility Patch for livekit.local_inference ──
+class _DummyInference:
+    def __init__(self, *args, **kwargs):
+        pass
+    def predict(self, *args, **kwargs):
+        return 0.0
+    def reset(self, *args, **kwargs):
+        pass
+    @classmethod
+    def load(cls, *args, **kwargs):
+        return cls()
 
-from livekit.agents import (
-    AutoSubscribe,
-    JobContext,
-    JobProcess,
-    WorkerOptions,
-    cli,
-    llm,
-)
-from livekit.agents.pipeline import VoicePipelineAgent
-from livekit.plugins import openai, silero
+_dummy_mod = types.ModuleType("livekit.local_inference")
+for _attr in ["EOT", "VAD", "STT", "TTS", "LLM", "Whisper", "SileroVAD"]:
+    setattr(_dummy_mod, _attr, _DummyInference)
+_dummy_mod.VAD_WINDOW_SAMPLES = 512
+sys.modules["livekit.local_inference"] = _dummy_mod
 
-from app.agent.tools import jarvis_tools
+# Load .env before any LiveKit imports
+load_dotenv(override=True)
+
+
+from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli, llm
+from livekit.agents.voice import Agent, AgentSession
+from livekit.plugins import cartesia, deepgram, groq
+
 from app.config import settings
 
-# Configure logger
-logger = logging.getLogger("jarvis-livekit-voice-agent")
+logger = logging.getLogger("jarvis-voice-agent")
 logger.setLevel(logging.INFO)
 
-SYSTEM_PROMPT = """You are Jarvis, an AI Copilot integrated with Microsoft 365.
-Your primary role is to assist users in managing emails (drafting only), scheduling calendar events, and organizing tasks.
+SYSTEM_INSTRUCTIONS = (
+    "You are Jarvis, a highly intelligent and conversational AI voice assistant. "
+    "You assist users naturally with any question they have. "
+    "Speak clearly, concisely, and in a friendly tone. "
+    "Keep responses brief — you are speaking out loud in real time."
+)
 
-Rules:
-1. Speak naturally, clearly, and concisely.
-2. For casual questions or greetings, respond as a friendly AI assistant without using tools.
-3. Only use Microsoft 365 tools when explicitly asked to perform a task.
-4. You cannot send emails directly; only create drafts for user review.
-"""
 
-async def entrypoint(ctx: JobContext):
-    """
-    LiveKit Agent Entrypoint.
-    Establishes real-time WebRTC audio connection and runs VoicePipelineAgent.
-    """
-    logger.info(f"Connecting Jarvis Voice Agent to room: {ctx.room.name}")
-    
-    # Connect to room with audio subscription enabled
+class JarvisAgent(Agent):
+    def __init__(self) -> None:
+        super().__init__(instructions=SYSTEM_INSTRUCTIONS)
+
+    async def on_enter(self) -> None:
+        logger.info("Jarvis Agent entered session — greeting user.")
+        await self.session.generate_reply(
+            instructions="Greet the user warmly and briefly introduce yourself as Jarvis, powered by Deepgram, Groq, and Cartesia."
+        )
+
+
+async def entrypoint(ctx: JobContext) -> None:
+    logger.info(f"Jarvis Voice Agent connecting to room: {ctx.room.name}")
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
 
-    # Initialize LiveKit Chat Context with System Prompt
-    chat_context = llm.ChatContext().append(
-        role="system",
-        text=SYSTEM_PROMPT,
+    session = AgentSession(
+        stt=deepgram.STT(api_key=settings.DEEPGRAM_API_KEY or os.getenv("DEEPGRAM_API_KEY")),
+        llm=groq.LLM(
+            api_key=settings.GROQ_API_KEY or os.getenv("GROQ_API_KEY"),
+            model=settings.LLM_PRIMARY_MODEL,
+        ),
+        tts=cartesia.TTS(
+            api_key=settings.CARTESIA_API_KEY or os.getenv("CARTESIA_API_KEY"),
+            voice="f786b574-daa5-4673-aa0c-cbe3e8534c02",
+        ),
     )
 
-    # Initialize LiveKit VoicePipelineAgent (STT -> LLM/Tools -> TTS)
-    agent = VoicePipelineAgent(
-        vad=silero.VAD.load(),
-        stt=openai.STT(),
-        llm=openai.LLM(
-            model="gpt-4o-mini",
-            temperature=0.7,
-        ),
-        tts=openai.TTS(
-            voice="alloy",
-            speed=1.0,
-        ),
-        chat_ctx=chat_context,
+    await session.start(
+        agent=JarvisAgent(),
+        room=ctx.room,
+    )
+    logger.info("Jarvis Voice Agent session started and ready.")
+
+
+def main() -> None:
+    cli.run_app(
+        WorkerOptions(
+            entrypoint_fnc=entrypoint,
+            ws_url=settings.LIVEKIT_URL or os.getenv("LIVEKIT_URL"),
+            api_key=settings.LIVEKIT_API_KEY or os.getenv("LIVEKIT_API_KEY"),
+            api_secret=settings.LIVEKIT_API_SECRET or os.getenv("LIVEKIT_API_SECRET"),
+        )
     )
 
-    # Start the Voice Agent in the LiveKit room
-    agent.start(ctx.room)
-    
-    # Greet user upon joining room
-    await agent.say("Hello! I am Jarvis, your AI Copilot. How can I assist you with your Microsoft 365 tasks today?", allow_interruptions=True)
-
-def main():
-    """Run LiveKit Worker process."""
-    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
 
 if __name__ == "__main__":
     main()
+
+
+
