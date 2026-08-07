@@ -88,17 +88,19 @@ def get_system_instructions() -> str:
     utc_time_str = now_utc.strftime("%H:%M UTC")
     
     return (
-        "You are Jarvis, an advanced AI Copilot for Microsoft 365. You speak naturally, fluently, and intelligently like Google Gemini Live.\n\n"
-        "STRICT SCOPE ENFORCEMENT:\n"
-        "- You ONLY assist with Microsoft 365 resources: reading & drafting emails, calendar events, schedules, dates, times, and To-Do tasks.\n"
-        "- If the user asks about unrelated topics, politely remind them that you are specialized in Microsoft 365.\n\n"
-        "REAL-TIME CLOCK & DATE CONTEXT:\n"
+        "You are Jarvis, an advanced AI Copilot for Microsoft 365. Speak naturally, directly, and clearly.\n\n"
+        "LIVE ACCESS RULES:\n"
+        "- YOU HAVE FULL LIVE API ACCESS to the user's Microsoft 365 account via your function tools!\n"
+        "- NEVER say 'I don't have access', 'I cannot fetch', or 'I need permission'. You already have full access!\n"
+        "- When asked to fetch emails, read emails, delete emails/drafts, delete all drafts, schedule or delete meetings, or manage To-Do tasks, ALWAYS invoke the appropriate function tool immediately.\n"
+        "- STRICT PRIVACY RULE: NEVER send emails automatically (`create_draft` and `delete_email` are allowed, but sending emails is forbidden).\n\n"
+        "REAL-TIME CLOCK CONTEXT (Pakistan Standard Time, PKT, UTC+5):\n"
         f"- Current Date: {date_str}\n"
-        f"- Current Time: {time_str} PKT (Pakistan Standard Time, UTC+5) / {utc_time_str}\n\n"
+        f"- Current Local Time in Pakistan: {time_str} PKT (UTC+5) / {utc_time_str}\n\n"
         "CONVERSATIONAL STYLE:\n"
-        "1. Speak naturally, warmly, and fluidly in a clear human voice (like Google Gemini Live).\n"
-        "2. Keep responses helpful, direct, and concise (1-2 smooth sentences).\n"
-        "3. Always use the exact real-time clock and date above when asked for time, date, or schedule."
+        "1. Speak directly, naturally, and concisely (1-2 short plain sentences max).\n"
+        "2. Do NOT use fake sweetness, over-polite filler, or lengthy introductions.\n"
+        "3. Always perform the requested action using your tools immediately."
     )
 
 
@@ -144,23 +146,37 @@ async def entrypoint(ctx: JobContext) -> None:
         logger.info("Using High-Quality Free Edge-TTS (Microsoft Ava Neural).")
         tts_impl = EdgeTTS(voice="en-US-AvaNeural")
 
-    import random
+    from livekit.agents.llm import FallbackAdapter
     groq_keys = settings.get_groq_api_keys()
-    selected_groq_key = random.choice(groq_keys) if groq_keys else (settings.GROQ_API_KEY or os.getenv("GROQ_API_KEY"))
-    logger.info(f"Selected Groq LLM Key for session: {selected_groq_key[:10]}... (Pool size: {len(groq_keys)})")
+    if not groq_keys:
+        single_key = settings.GROQ_API_KEY or os.getenv("GROQ_API_KEY", "")
+        if single_key: groq_keys = [single_key]
+
+    llm_pool = []
+    models_pool = [settings.LLM_FAST_MODEL, settings.LLM_PRIMARY_MODEL, settings.LLM_FALLBACK_MODEL]
+    for k in groq_keys:
+        for m_name in models_pool:
+            llm_pool.append(groq.LLM(api_key=k, model=m_name))
+
+    if llm_pool:
+        voice_llm = FallbackAdapter(llm=llm_pool, attempt_timeout=5.0, max_retry_per_llm=1)
+    else:
+        voice_llm = groq.LLM(api_key=settings.GROQ_API_KEY, model=settings.LLM_FAST_MODEL)
+
+    logger.info(f"Configured Voice Agent FallbackAdapter with {len(llm_pool)} failover instances across {len(groq_keys)} Groq API key(s).")
 
     session = AgentSession(
         stt=stt_impl,
-        llm=groq.LLM(
-            api_key=selected_groq_key,
-            model=settings.LLM_PRIMARY_MODEL,
-        ),
+        llm=voice_llm,
         tts=tts_impl,
+        tools=agent_tools,
         min_endpointing_delay=1.0,
         max_endpointing_delay=2.0,
-        min_interruption_duration=0.3,
-        min_interruption_words=2,
+        allow_interruptions=True,
+        min_interruption_duration=0.1,
+        min_interruption_words=1,
     )
+
 
 
 

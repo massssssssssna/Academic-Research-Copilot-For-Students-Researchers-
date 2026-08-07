@@ -65,7 +65,11 @@ class Settings(BaseSettings):
 
     def get_groq_api_keys(self) -> list[str]:
         keys = []
-        for var in ["GROQ_API_KEY", "GROQ_API_KEY_1", "GROQ_API_KEY_2", "GROQ_API_KEY_3", "GROQ_API_KEY_4"]:
+        possible_vars = [
+            "GROQ_API_KEY", "GROQ_API_KEY_1", "GROQ_API_KEY_2", "GROQ_API_KEY_3", "GROQ_API_KEY_4", "GROQ_API_KEY_5",
+            "GROQ_1", "GROQ_2", "GROQ_3", "GROQ_4", "GROQ_5"
+        ]
+        for var in possible_vars:
             val = os.getenv(var, "").strip()
             if val and val not in keys:
                 keys.append(val)

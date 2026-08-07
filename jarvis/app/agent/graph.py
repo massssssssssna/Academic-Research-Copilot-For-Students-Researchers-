@@ -16,9 +16,15 @@ PERSONA RULES:
 
 TOOL RULES:
 1. Reply directly without tools for casual chat. Use M365 tools ONLY when user explicitly asks.
-2. EMAILS: NEVER send emails. Use drafts ONLY when asked.
-3. DATES: Resolve relative days to exact YYYY-MM-DD using the DATE CONTEXT MAP.
-4. TASKS: Separate clean action title (e.g., `title="Go home"`) from time words. NEVER put time/date phrases in the task title!"""
+2. EMAILS: 
+   - NEVER send emails. Use drafts ONLY when asked.
+   - To list or count drafts, pass folder="drafts" to `get_emails`.
+   - To list inbox emails, pass folder="inbox" to `get_emails`.
+   - You can summarize or delete emails using `get_email` and `delete_email`.
+3. DATES & TIME:
+   - Primary user location/timezone is Pakistan (PKT, UTC+5 / 'Pakistan Standard Time').
+   - Resolve relative days to exact YYYY-MM-DD using the DATE CONTEXT MAP.
+4. TASKS: Separate clean action title (e.g., `title="Go home"`) from time words. NEVER put time/date phrases in the task title! Use update_todo with status="completed" to complete tasks."""
 
 def should_continue(state: AgentState) -> Literal["tools", "__end__"]:
     """Determine whether to continue to tools or end the conversation."""
@@ -35,27 +41,32 @@ def should_continue(state: AgentState) -> Literal["tools", "__end__"]:
 from datetime import datetime, timedelta, timezone
 
 def get_datetime_context() -> str:
-    """Generates an accurate real-time relative date & day lookup map."""
-    now = datetime.now(timezone.utc)
-    today_str = now.strftime("%Y-%m-%d")
-    today_day = now.strftime("%A")
+    """Generates an accurate real-time relative date & day lookup map in Pakistan Standard Time (PKT, UTC+5)."""
+    now_utc = datetime.now(timezone.utc)
+    pkt_tz = timezone(timedelta(hours=5))
+    now_pkt = now_utc.astimezone(pkt_tz)
     
-    yesterday = now - timedelta(days=1)
-    tomorrow = now + timedelta(days=1)
+    today_str = now_pkt.strftime("%Y-%m-%d")
+    today_day = now_pkt.strftime("%A")
+    time_str = now_pkt.strftime("%I:%M %p PKT (UTC+5)")
+    
+    yesterday = now_pkt - timedelta(days=1)
+    tomorrow = now_pkt + timedelta(days=1)
     
     upcoming = []
     for i in range(1, 8):
-        dt = now + timedelta(days=i)
+        dt = now_pkt + timedelta(days=i)
         upcoming.append(f"  - {dt.strftime('%A')} ({dt.strftime('%b %d')}): {dt.strftime('%Y-%m-%d')}")
         
     return (
-        f"REAL-TIME DATE & DAY CONTEXT MAP:\n"
+        f"REAL-TIME DATE & DAY CONTEXT MAP (Pakistan Standard Time, PKT, UTC+5):\n"
+        f"- CURRENT LOCAL TIME in Pakistan is {time_str}\n"
         f"- TODAY is {today_day}, {today_str}\n"
         f"- YESTERDAY was {yesterday.strftime('%A')}, {yesterday.strftime('%Y-%m-%d')}\n"
         f"- TOMORROW will be {tomorrow.strftime('%A')}, {tomorrow.strftime('%Y-%m-%d')}\n"
         f"UPCOMING DAYS LOOKUP MAP (Use to convert 'on Friday', 'this Monday', etc. into exact YYYY-MM-DD dates):\n"
         + "\n".join(upcoming) + "\n"
-        f"Default timezone is Asia/Karachi (PKT, UTC+5) or UTC."
+        f"Always schedule events and respond using Pakistan Standard Time (PKT, UTC+5)."
     )
 
 def call_model(state: AgentState):

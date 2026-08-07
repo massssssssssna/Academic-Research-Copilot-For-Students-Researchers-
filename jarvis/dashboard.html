@@ -370,6 +370,8 @@
       <button class="nav-item active" onclick="switchView('chat')"><span>💬</span> Chat Assistant</button>
       <button class="nav-item" onclick="switchView('live-assistant')"><span>🎙️</span> Assistant Live</button>
       <button class="nav-item" onclick="switchView('email')"><span>📧</span> Mailbox</button>
+      <button class="nav-item" onclick="switchView('calendar')"><span>📅</span> Calendar</button>
+      <button class="nav-item" onclick="switchView('todo')"><span>☑️</span> Tasks</button>
     </nav>
 
     <div class="conv-section" id="convSection">
@@ -463,8 +465,10 @@
     <div id="view-email" class="view-container">
       <div class="content-area">
         <div class="email-tabs">
-          <div class="email-tab active" onclick="loadEmails()">Inbox</div>
-          <!-- Drafts feature UI simplified, but could add tab here -->
+          <div class="email-tab active" id="tab-inbox" onclick="switchEmailTab('inbox')">Inbox</div>
+          <div class="email-tab" id="tab-drafts" onclick="switchEmailTab('drafts')">Drafts</div>
+          <div class="email-tab" id="tab-sentitems" onclick="switchEmailTab('sentitems')">Sent Items</div>
+          <div class="email-tab" id="tab-deleteditems" onclick="switchEmailTab('deleteditems')">Trash</div>
         </div>
         <div id="emailList" class="list-grid">
           <!-- Emails injected here -->
@@ -472,7 +476,34 @@
       </div>
     </div>
 
-    <!-- Removed Calendar & To-Do views -->
+    <!-- CALENDAR VIEW -->
+    <div id="view-calendar" class="view-container">
+      <div class="content-area">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+          <div>
+            <h3 style="font-size:1.2rem; font-weight:600;">Upcoming Calendar Events</h3>
+            <p style="font-size:0.8rem; color:var(--muted);">Timezone: Pakistan Standard Time (PKT, UTC+5)</p>
+          </div>
+          <button class="btn btn-primary" onclick="openEventModal()">+ Schedule Event</button>
+        </div>
+        <div id="eventList" class="list-grid">
+          <!-- Events injected here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TO-DO TASKS VIEW -->
+    <div id="view-todo" class="view-container">
+      <div class="content-area">
+        <div class="todo-header">
+          <h3 style="font-size:1.2rem; font-weight:600;">Microsoft To-Do Tasks</h3>
+          <button class="btn btn-primary" onclick="openTodoModal()">+ Add Task</button>
+        </div>
+        <div id="todoList" class="list-grid">
+          <!-- Tasks injected here -->
+        </div>
+      </div>
+    </div>
 
   </main>
 </div>
@@ -516,6 +547,70 @@
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('draftModal')">Cancel</button>
       <button class="btn btn-primary" onclick="submitDraft()">Save Draft</button>
+    </div>
+  </div>
+</div>
+
+<!-- Calendar Event Modal -->
+<div class="modal-overlay" id="eventModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Schedule Event</div>
+      <button class="modal-close" onclick="closeModal('eventModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Event Subject</label>
+        <input type="text" id="eventSubject" class="input-field" placeholder="Team Sync / Client Meeting" />
+      </div>
+      <div class="form-group">
+        <label>Start Time (PKT Local Time)</label>
+        <input type="datetime-local" id="eventStart" class="input-field" />
+      </div>
+      <div class="form-group">
+        <label>End Time (PKT Local Time)</label>
+        <input type="datetime-local" id="eventEnd" class="input-field" />
+      </div>
+      <div class="form-group">
+        <label>Location</label>
+        <input type="text" id="eventLocation" class="input-field" placeholder="Microsoft Teams / Office" />
+      </div>
+      <div class="form-group">
+        <label>Description / Notes</label>
+        <textarea id="eventBody" class="input-field" rows="3"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('eventModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitEvent()">Create Meeting</button>
+    </div>
+  </div>
+</div>
+
+<!-- To-Do Task Modal -->
+<div class="modal-overlay" id="todoModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add To-Do Task</div>
+      <button class="modal-close" onclick="closeModal('todoModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Task Title</label>
+        <input type="text" id="todoTitle" class="input-field" placeholder="Complete quarterly report" />
+      </div>
+      <div class="form-group">
+        <label>Due Date</label>
+        <input type="date" id="todoDueDate" class="input-field" />
+      </div>
+      <div class="form-group">
+        <label>Due Time</label>
+        <input type="time" id="todoDueTime" class="input-field" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('todoModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitTodo()">Add Task</button>
     </div>
   </div>
 </div>
@@ -754,6 +849,8 @@
     } catch(e) { window.location.href = '/login.html'; }
   }
 
+  let currentEmailFolder = 'inbox';
+
   // ── UI Navigation ──
   function switchView(view) {
     currentView = view;
@@ -769,7 +866,7 @@
     const targetView = document.getElementById('view-' + view);
     if (targetView) targetView.classList.add('active');
 
-    const titles = { chat: 'Chat Assistant', 'live-assistant': 'Assistant Live', email: 'Mailbox' };
+    const titles = { chat: 'Chat Assistant', 'live-assistant': 'Assistant Live', email: 'Mailbox', calendar: 'Calendar', todo: 'To-Do Tasks' };
     const viewTitle = document.getElementById('viewTitle');
     if (viewTitle) viewTitle.textContent = titles[view] || 'Chat Assistant';
     
@@ -781,30 +878,50 @@
       } else if (view === 'live-assistant') {
         actions.innerHTML = '<button class="btn btn-primary" style="padding:6px 12px;font-size:0.8rem;" onclick="toggleLiveBot()">⚡ Start Assistant Live</button>';
       } else if (view === 'email') {
-        actions.innerHTML = '<button class="btn btn-primary" style="padding:6px 12px;font-size:0.8rem;" onclick="openDraftModal()">+ New Draft</button>';
-        loadEmails();
+        actions.innerHTML = '<button class="btn btn-outline" style="padding:6px 12px;font-size:0.8rem;" onclick="loadEmails()">🔄 Refresh</button><button class="btn btn-primary" style="padding:6px 12px;font-size:0.8rem;" onclick="openDraftModal()">+ New Draft</button>';
+        loadEmails(currentEmailFolder);
+      } else if (view === 'calendar') {
+        actions.innerHTML = '<button class="btn btn-primary" style="padding:6px 12px;font-size:0.8rem;" onclick="openEventModal()">+ Schedule Event</button>';
+        loadEvents();
+      } else if (view === 'todo') {
+        actions.innerHTML = '<button class="btn btn-primary" style="padding:6px 12px;font-size:0.8rem;" onclick="openTodoModal()">+ Add Task</button>';
+        loadTodos();
       }
     }
   }
 
   // ── Emails ──
-  async function loadEmails() {
+  function switchEmailTab(folder) {
+    currentEmailFolder = folder;
+    document.querySelectorAll('.email-tab').forEach(t => t.classList.remove('active'));
+    const activeTab = document.getElementById('tab-' + folder);
+    if(activeTab) activeTab.classList.add('active');
+    loadEmails(folder);
+  }
+
+  async function loadEmails(folder = currentEmailFolder) {
     const list = document.getElementById('emailList');
     list.innerHTML = '<div class="loading-spinner"></div>';
     try {
-      const r = await fetch('/api/emails?top=15');
+      const r = await fetch(`/api/emails?folder=${folder}&top=20`);
       if(!r.ok) throw new Error();
       const data = await r.json();
       list.innerHTML = '';
-      if(data.value.length === 0) list.innerHTML = '<div class="empty-state">No emails found</div>';
+      if(!data.value || data.value.length === 0) {
+        list.innerHTML = `<div class="empty-state">No emails found in ${folder}</div>`;
+        return;
+      }
       data.value.forEach(msg => {
         const div = document.createElement('div');
         div.className = 'card email-item';
-        const date = new Date(msg.receivedDateTime).toLocaleDateString(undefined, {month:'short', day:'numeric'});
+        const date = new Date(msg.receivedDateTime || msg.createdDateTime).toLocaleDateString(undefined, {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
         div.innerHTML = `
           <div class="email-header">
             <div class="email-sender">${escHtml(msg.from?.emailAddress?.name || msg.from?.emailAddress?.address || 'Unknown')}</div>
-            <div class="email-date">${date}</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div class="email-date">${date}</div>
+              <button class="conv-action-btn delete" title="Delete Email" onclick="deleteEmail(event, '${msg.id}')">🗑️</button>
+            </div>
           </div>
           <div class="email-subject">${escHtml(msg.subject || '(No Subject)')}</div>
           <div class="email-snippet">${escHtml(msg.bodyPreview || '')}</div>
@@ -817,6 +934,18 @@
     }
   }
 
+  async function deleteEmail(event, messageId) {
+    if (event) event.stopPropagation();
+    if (!confirm('Delete this email from Microsoft Outlook?')) return;
+    try {
+      const r = await fetch(`/api/emails/${messageId}`, { method: 'DELETE' });
+      if (r.ok) {
+        showToast('Email deleted successfully');
+        loadEmails(currentEmailFolder);
+      } else { showToast('Failed to delete email'); }
+    } catch(e) { showToast('Error deleting email'); }
+  }
+
   function openEmailModal(msg) {
     document.getElementById('emailModalBody').innerHTML = `
       <div style="margin-bottom: 12px; font-weight:600;">From: ${escHtml(msg.from?.emailAddress?.name || '')} &lt;${escHtml(msg.from?.emailAddress?.address || '')}&gt;</div>
@@ -825,6 +954,7 @@
       <div style="white-space: pre-wrap;">${escHtml(msg.body?.content || msg.bodyPreview || '')}</div>
     `;
     document.getElementById('emailModalFooter').innerHTML = `
+      <button class="btn btn-danger" onclick="closeModal('emailModal'); deleteEmail(null, '${msg.id}')">Delete</button>
       <button class="btn btn-outline" onclick="closeModal('emailModal')">Close</button>
       <button class="btn btn-primary" onclick="closeModal('emailModal'); openDraftReply('${msg.id}', '${escHtml(msg.from?.emailAddress?.address || '')}', 'Re: ${escHtml(msg.subject || '')}')">Reply</button>
       <button class="btn btn-primary" style="background:var(--accent);" onclick="closeModal('emailModal'); summarizeEmail('${msg.id}')">Summarize with AI</button>
@@ -876,6 +1006,7 @@
       if(r.ok) {
         closeModal('draftModal');
         showToast('Draft created successfully!');
+        if (currentEmailFolder === 'drafts') loadEmails('drafts');
       } else { showToast('Failed to create draft'); }
     } catch(e) { showToast('Error creating draft'); }
   }
@@ -884,6 +1015,185 @@
     switchView('chat');
     document.getElementById('messageInput').value = `Summarize the email with ID: ${id}`;
     sendMessage();
+  }
+
+  // ── Calendar Events ──
+  async function loadEvents() {
+    const list = document.getElementById('eventList');
+    list.innerHTML = '<div class="loading-spinner"></div>';
+    try {
+      const r = await fetch('/api/events?top=15');
+      if(!r.ok) throw new Error();
+      const data = await r.json();
+      list.innerHTML = '';
+      if(!data.value || data.value.length === 0) {
+        list.innerHTML = '<div class="empty-state">No upcoming calendar events</div>';
+        return;
+      }
+      data.value.forEach(evt => {
+        const div = document.createElement('div');
+        div.className = 'card event-item';
+        const startDt = new Date(evt.start.dateTime + 'Z').toLocaleString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+        div.innerHTML = `
+          <div class="event-time">
+            <div class="event-time-start">${startDt}</div>
+            <div class="event-time-date">PKT Time</div>
+          </div>
+          <div class="event-details">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div class="event-title">${escHtml(evt.subject || '(No Title)')}</div>
+              <button class="conv-action-btn delete" title="Delete Event" onclick="deleteEvent('${evt.id}')">🗑️</button>
+            </div>
+            ${evt.location?.displayName ? `<div class="event-loc">📍 ${escHtml(evt.location.displayName)}</div>` : ''}
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    } catch(e) {
+      list.innerHTML = '<div class="empty-state">Failed to load calendar events</div>';
+    }
+  }
+
+  function openEventModal() {
+    document.getElementById('eventSubject').value = '';
+    document.getElementById('eventStart').value = '';
+    document.getElementById('eventEnd').value = '';
+    document.getElementById('eventLocation').value = '';
+    document.getElementById('eventBody').value = '';
+    document.getElementById('eventModal').classList.add('active');
+  }
+
+  async function submitEvent() {
+    const subject = document.getElementById('eventSubject').value;
+    const startVal = document.getElementById('eventStart').value;
+    const endVal = document.getElementById('eventEnd').value;
+    const location = document.getElementById('eventLocation').value;
+    const body = document.getElementById('eventBody').value;
+
+    if (!subject || !startVal || !endVal) {
+      showToast('Please fill subject, start time, and end time.');
+      return;
+    }
+
+    try {
+      const r = await fetch('/api/events', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          subject,
+          start_datetime: new Date(startVal).toISOString(),
+          end_datetime: new Date(endVal).toISOString(),
+          timezone: 'Pakistan Standard Time',
+          location,
+          body
+        })
+      });
+      if(r.ok) {
+        closeModal('eventModal');
+        showToast('Calendar event created!');
+        loadEvents();
+      } else { showToast('Failed to create event'); }
+    } catch(e) { showToast('Error creating event'); }
+  }
+
+  async function deleteEvent(eventId) {
+    if(!confirm('Delete this event from your calendar?')) return;
+    try {
+      const r = await fetch(`/api/events/${eventId}`, { method: 'DELETE' });
+      if(r.ok) {
+        showToast('Event deleted');
+        loadEvents();
+      } else { showToast('Failed to delete event'); }
+    } catch(e) { showToast('Error deleting event'); }
+  }
+
+  // ── To-Do Tasks ──
+  async function loadTodos() {
+    const list = document.getElementById('todoList');
+    list.innerHTML = '<div class="loading-spinner"></div>';
+    try {
+      const r = await fetch('/api/todos');
+      if(!r.ok) throw new Error();
+      const data = await r.json();
+      list.innerHTML = '';
+      if(!data.value || data.value.length === 0) {
+        list.innerHTML = '<div class="empty-state">No To-Do tasks found</div>';
+        return;
+      }
+      data.value.forEach(task => {
+        const div = document.createElement('div');
+        div.className = 'todo-item';
+        const isComp = task.status === 'completed';
+        const dueVal = task.dueDateTime?.dateTime ? task.dueDateTime.dateTime.slice(0,10) : '';
+        div.innerHTML = `
+          <div class="todo-checkbox ${isComp ? 'completed' : ''}" onclick="toggleTodo('${task.id}', '${task.status}')"></div>
+          <div class="todo-content">
+            <div class="todo-title ${isComp ? 'completed' : ''}">${escHtml(task.title || 'Untitled Task')}</div>
+            ${dueVal ? `<div class="todo-meta">📅 Due: ${dueVal}</div>` : ''}
+          </div>
+          <div class="todo-actions">
+            <button class="conv-action-btn delete" title="Delete Task" onclick="deleteTodo('${task.id}')">🗑️</button>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    } catch(e) {
+      list.innerHTML = '<div class="empty-state">Failed to load To-Do tasks</div>';
+    }
+  }
+
+  function openTodoModal() {
+    document.getElementById('todoTitle').value = '';
+    document.getElementById('todoDueDate').value = '';
+    document.getElementById('todoDueTime').value = '';
+    document.getElementById('todoModal').classList.add('active');
+  }
+
+  async function submitTodo() {
+    const title = document.getElementById('todoTitle').value;
+    const due_date = document.getElementById('todoDueDate').value;
+    const due_time = document.getElementById('todoDueTime').value;
+
+    if(!title || !title.trim()) { showToast('Please enter a task title'); return; }
+
+    try {
+      const r = await fetch('/api/todos', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ list_id: 'default', title: title.trim(), due_date, due_time })
+      });
+      if(r.ok) {
+        closeModal('todoModal');
+        showToast('Task created successfully!');
+        loadTodos();
+      } else { showToast('Failed to create task'); }
+    } catch(e) { showToast('Error creating task'); }
+  }
+
+  async function toggleTodo(taskId, currentStatus) {
+    const newStatus = currentStatus === 'completed' ? 'notStarted' : 'completed';
+    try {
+      const r = await fetch(`/api/todos/${taskId}`, {
+        method: 'PATCH',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ status: newStatus })
+      });
+      if(r.ok) {
+        showToast(newStatus === 'completed' ? 'Task marked completed!' : 'Task re-opened');
+        loadTodos();
+      }
+    } catch(e) {}
+  }
+
+  async function deleteTodo(taskId) {
+    if(!confirm('Delete this task?')) return;
+    try {
+      const r = await fetch(`/api/todos/${taskId}`, { method: 'DELETE' });
+      if(r.ok) {
+        showToast('Task deleted');
+        loadTodos();
+      } else { showToast('Failed to delete task'); }
+    } catch(e) { showToast('Error deleting task'); }
   }
 
 

@@ -39,6 +39,10 @@ async def get_livekit_token(
     identity = current_user.get("email") or current_user.get("user_id") or "user"
     user_name = current_user.get("name") or identity
 
+    import json
+    session_id = request.cookies.get("jarvis_session") or ""
+    metadata_json = json.dumps({"session_id": session_id, "email": current_user.get("email")})
+
     token = (
         api.AccessToken(
             api_key=settings.LIVEKIT_API_KEY,
@@ -46,6 +50,7 @@ async def get_livekit_token(
         )
         .with_identity(identity)
         .with_name(user_name)
+        .with_metadata(metadata_json)
         .with_grants(
             api.VideoGrants(
                 room_join=True,
@@ -75,9 +80,10 @@ async def get_livekit_token(
                 api.CreateAgentDispatchRequest(
                     agent_name="jarvis",
                     room=room,
+                    metadata=metadata_json,
                 )
             )
-            print(f"Agent 'jarvis' dispatched successfully to room: {room}")
+            print(f"Agent 'jarvis' dispatched successfully to room: {room} with session metadata.")
     except Exception as e:
         print(f"Agent dispatch notice: {e}")
 

@@ -26,11 +26,12 @@ async def get_emails(
     top: int = 10, 
     skip: int = 0, 
     search: Optional[str] = None, 
+    folder: str = "inbox",
     session_id: str = Depends(get_session_id)
 ):
     client = MicrosoftGraphClient(session_id)
     try:
-        return client.get_messages(top=top, skip=skip, search=search)
+        return client.get_messages(top=top, skip=skip, search=search, folder=folder)
     except MicrosoftGraphError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
 
@@ -42,6 +43,18 @@ async def get_email(
     client = MicrosoftGraphClient(session_id)
     try:
         return client.get_message(message_id)
+    except MicrosoftGraphError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+
+@router.delete("/{message_id}")
+async def delete_email(
+    message_id: str,
+    session_id: str = Depends(get_session_id)
+):
+    client = MicrosoftGraphClient(session_id)
+    try:
+        client.delete_message(message_id)
+        return {"status": "success", "message": "Email deleted successfully"}
     except MicrosoftGraphError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
 

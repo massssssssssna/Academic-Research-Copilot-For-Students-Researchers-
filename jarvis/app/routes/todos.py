@@ -27,6 +27,15 @@ class UpdateTodoPayload(BaseModel):
     importance: Optional[str] = None
     status: Optional[str] = None  # notStarted, inProgress, completed, waitingOnOthers, deferred
 
+def _resolve_list(client: MicrosoftGraphClient, list_id: Optional[str]) -> str:
+    if not list_id or list_id.lower() == "default":
+        lists_res = client.get_todo_lists()
+        if lists_res and "value" in lists_res and len(lists_res["value"]) > 0:
+            default_list = next((lst for lst in lists_res["value"] if lst.get("wellKnownListName") == "defaultList"), lists_res["value"][0])
+            return default_list["id"]
+        raise HTTPException(status_code=404, detail="No To-Do list found")
+    return list_id
+
 @router.get("/lists")
 async def get_todo_lists(session_id: str = Depends(get_session_id)):
     client = MicrosoftGraphClient(session_id)
@@ -37,24 +46,26 @@ async def get_todo_lists(session_id: str = Depends(get_session_id)):
 
 @router.get("")
 async def get_todos(
-    list_id: str = Query(..., description="ID of the To-Do list"),
+    list_id: Optional[str] = Query(None, description="ID of the To-Do list"),
     session_id: str = Depends(get_session_id)
 ):
     client = MicrosoftGraphClient(session_id)
     try:
-        return client.get_todos(list_id)
+        target_list = _resolve_list(client, list_id)
+        return client.get_todos(target_list)
     except MicrosoftGraphError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
 
 @router.get("/{task_id}")
 async def get_todo(
     task_id: str,
-    list_id: str = Query(..., description="ID of the To-Do list"),
+    list_id: Optional[str] = Query(None, description="ID of the To-Do list"),
     session_id: str = Depends(get_session_id)
 ):
     client = MicrosoftGraphClient(session_id)
     try:
-        return client.get_todo(list_id, task_id)
+        target_list = _resolve_list(client, list_id)
+        return client.get_todo(target_list, task_id)
     except MicrosoftGraphError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
 
@@ -63,17 +74,14 @@ async def create_todo(
     payload: CreateTodoPayload,
     session_id: str = Depends(get_session_id)
 ):
-    # Validate importance
     if payload.importance and payload.importance not in ["low", "normal", "high"]:
         raise HTTPException(status_code=422, detail="Invalid importance value")
 
-    # Basic ISO date format check (regex or datetime parsing could be used, but keeping simple as requested)
-    # Using length check as basic defense, full validation would use regex or datetime.strptime
-    
     client = MicrosoftGraphClient(session_id)
     try:
+        target_list = _resolve_list(client, payload.list_id)
         return client.create_todo(
-            list_id=payload.list_id,
+            list_id=target_list,
             title=payload.title,
             body=payload.body,
             due_date=payload.due_date,
@@ -87,7 +95,7 @@ async def create_todo(
 async def update_todo(
     task_id: str,
     payload: UpdateTodoPayload,
-    list_id: str = Query(..., description="ID of the To-Do list"),
+    list_id: Optional[str] = Query(None, description="ID of the To-Do list"),
     session_id: str = Depends(get_session_id)
 ):
     client = MicrosoftGraphClient(session_id)
@@ -112,19 +120,21 @@ async def update_todo(
         }
         
     try:
-        return client.update_todo(list_id, task_id, update_data)
+        target_list = _resolve_list(client, list_id)
+        return client.update_todo(target_list, task_id, update_data)
     except MicrosoftGraphError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
 
 @router.delete("/{task_id}")
 async def delete_todo(
     task_id: str,
-    list_id: str = Query(..., description="ID of the To-Do list"),
+    list_id: Optional[str] = Query(None, description="ID of the To-Do list"),
     session_id: str = Depends(get_session_id)
 ):
     client = MicrosoftGraphClient(session_id)
     try:
-        client.delete_todo(list_id, task_id)
+        target_list = _resolve_list(client, list_id)
+        client.delete_todo(target_list, task_id)
         return {"status": "success", "message": "Task deleted"}
     except MicrosoftGraphError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)

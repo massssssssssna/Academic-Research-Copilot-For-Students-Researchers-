@@ -129,14 +129,25 @@ class MicrosoftGraphClient:
     def get_current_user(self):
         return self._request("GET", "/me")
         
-    def get_messages(self, top: int = 10, skip: int = 0, search: Optional[str] = None):
+    def get_messages(self, top: int = 10, skip: int = 0, search: Optional[str] = None, folder: str = "inbox"):
         params = {"$top": top, "$skip": skip}
         if search:
             params["$search"] = f'"{search}"'
-        return self._request("GET", "/me/messages", params=params)
+        
+        folder_lower = (folder or "inbox").lower()
+        if folder_lower in ["inbox", "drafts", "sentitems", "deleteditems", "junkemail"]:
+            endpoint = f"/me/mailFolders/{folder_lower}/messages"
+        else:
+            endpoint = "/me/messages"
+            
+        return self._request("GET", endpoint, params=params)
         
     def get_message(self, message_id: str):
         return self._request("GET", f"/me/messages/{message_id}")
+
+    def delete_message(self, message_id: str):
+        """Deletes an email message by ID."""
+        return self._request("DELETE", f"/me/messages/{message_id}")
         
     def create_draft(self, subject: str, content: str, to_recipients: List[str]):
         """Creates an email draft. NO SENDING ALLOWED."""
