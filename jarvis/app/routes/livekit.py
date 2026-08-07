@@ -56,22 +56,31 @@ async def get_livekit_token(
         )
     )
 
-    # 2. Dispatch LiveKit Agent to the room
+    # 2. Dispatch LiveKit Agent to the room cleanly
     try:
-        lk_api = api.LiveKitAPI(
+        async with api.LiveKitAPI(
             settings.LIVEKIT_URL,
             settings.LIVEKIT_API_KEY,
             settings.LIVEKIT_API_SECRET,
-        )
-        await lk_api.agent_dispatch.create_dispatch(
-            api.CreateAgentDispatchRequest(
-                agent_name="",
-                room=room,
+        ) as lk_api:
+            # Clear old dispatches for this room to prevent double runner collision
+            try:
+                dispatches = await lk_api.agent_dispatch.list_dispatch(room=room)
+                for d in getattr(dispatches, "agent_dispatches", []):
+                    await lk_api.agent_dispatch.delete_dispatch(dispatch_id=d.id, room=room)
+            except Exception:
+                pass
+
+            await lk_api.agent_dispatch.create_dispatch(
+                api.CreateAgentDispatchRequest(
+                    agent_name="jarvis",
+                    room=room,
+                )
             )
-        )
-        await lk_api.aclose()
+            print(f"Agent 'jarvis' dispatched successfully to room: {room}")
     except Exception as e:
         print(f"Agent dispatch notice: {e}")
+
 
     return {
         "token": token.to_jwt(),

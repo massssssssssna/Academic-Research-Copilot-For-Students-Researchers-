@@ -1170,9 +1170,11 @@
           const audioElement = track.attach();
           audioElement.autoplay = true;
           document.body.appendChild(audioElement);
+          audioElement.play().catch(err => console.log('Audio autoplay play exception:', err));
           addLiveLog('🤖 Jarvis Agent is speaking...');
         }
       });
+
 
       liveKitRoom.on(LivekitClient.RoomEvent.LocalTrackPublished, (pub) => {
         if (pub.kind === LivekitClient.Track.Kind.Audio) {

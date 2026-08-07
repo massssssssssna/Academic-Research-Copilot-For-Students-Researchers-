@@ -5,5 +5,8 @@ __pycache__/
 .pytest_cache/
 secrets/
 credentials/
-.data/  
- 
+.data/
+caddy.exe
+scratch/
+*.log
+*.mp3

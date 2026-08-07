@@ -60,8 +60,17 @@ class Settings(BaseSettings):
     # ── API TOOL PAGINATION & PAYLOAD KNOBS ────────────────
     GRAPH_DEFAULT_TOP: int = int(os.getenv("GRAPH_DEFAULT_TOP", "10"))                  # Default items per M365 Graph fetch call
     
-    # Groq API Key
+    # Groq API Keys (Pool for failover rotation)
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+
+    def get_groq_api_keys(self) -> list[str]:
+        keys = []
+        for var in ["GROQ_API_KEY", "GROQ_API_KEY_1", "GROQ_API_KEY_2", "GROQ_API_KEY_3", "GROQ_API_KEY_4"]:
+            val = os.getenv(var, "").strip()
+            if val and val not in keys:
+                keys.append(val)
+        return keys
+
 
     # Deepgram & Cartesia API Keys for Voice Agent
     DEEPGRAM_API_KEY: str = os.getenv("DEEPGRAM_API_KEY", "")
