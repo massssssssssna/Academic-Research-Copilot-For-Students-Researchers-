@@ -1168,8 +1168,15 @@
       liveKitRoom.on(LivekitClient.RoomEvent.TrackSubscribed, (track, publication, participant) => {
         if (track.kind === LivekitClient.Track.Kind.Audio) {
           const audioElement = track.attach();
+          audioElement.autoplay = true;
           document.body.appendChild(audioElement);
           addLiveLog('🤖 Jarvis Agent is speaking...');
+        }
+      });
+
+      liveKitRoom.on(LivekitClient.RoomEvent.LocalTrackPublished, (pub) => {
+        if (pub.kind === LivekitClient.Track.Kind.Audio) {
+          addLiveLog('🎤 Microphone active & sending audio to Jarvis.');
         }
       });
 
@@ -1183,8 +1190,12 @@
 
       await liveKitRoom.connect(data.ws_url, data.token);
 
-      // Enable local microphone
-      await liveKitRoom.localParticipant.setMicrophoneEnabled(true);
+      // Enable local microphone with high-gain audio constraints
+      await liveKitRoom.localParticipant.setMicrophoneEnabled(true, {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      });
 
       isLiveBotActive = true;
       if (btn) {
