@@ -1192,12 +1192,15 @@
 
       await liveKitRoom.connect(data.ws_url, data.token);
 
-      // Enable local microphone with high-gain audio constraints
+      // Enable local microphone with maximum noise cancellation constraints
       await liveKitRoom.localParticipant.setMicrophoneEnabled(true, {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
+        echoCancellation: { exact: true },
+        noiseSuppression: { exact: true },
+        autoGainControl: { exact: true },
+        channelCount: 1,
+        sampleRate: 48000,
       });
+
 
       isLiveBotActive = true;
       if (btn) {
