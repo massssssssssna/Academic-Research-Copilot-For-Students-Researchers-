@@ -327,11 +327,11 @@ async def entrypoint(ctx: JobContext) -> None:
     logger.info(f"Configured Voice Agent FallbackAdapter with {len(llm_pool)} failover instances across {len(groq_keys)} Groq API key(s).")
 
     turn_opts = TurnHandlingOptions(
-        min_endpointing_delay=0.8,
-        max_endpointing_delay=2.0,
+        min_endpointing_delay=0.6,
+        max_endpointing_delay=1.8,
         allow_interruptions=True,
-        min_interruption_duration=0.4,
-        min_interruption_words=2,
+        min_interruption_duration=0.15,
+        min_interruption_words=1,
     )
     session = AgentSession(
         stt=stt_impl,

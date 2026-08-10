@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     # ── LLM & AGENT TUNING KNOBS ───────────────────────────
     LLM_PRIMARY_MODEL: str = os.getenv("LLM_PRIMARY_MODEL", "llama-3.3-70b-versatile") # High capacity 100k TPM model
     LLM_FAST_MODEL: str = os.getenv("LLM_FAST_MODEL", "llama-3.1-8b-instant")          # Low-latency model
-    LLM_FALLBACK_MODEL: str = os.getenv("LLM_FALLBACK_MODEL", "mixtral-8x7b-32768")     # Active fallback model
+    LLM_FALLBACK_MODEL: str = os.getenv("LLM_FALLBACK_MODEL", "llama-3.1-8b-instant")   # Active fallback model
     LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.3"))               # 0.0 (accurate/deterministic) to 1.0 (creative)
     LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "150"))                      # Short generation token limit for instant speech
     
