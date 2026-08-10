@@ -104,6 +104,11 @@ def get_system_instructions() -> str:
         "- For email drafting: if recipient, subject, or message content is missing, ask for the missing details naturally in one short question.\n"
         "- Maintain multi-turn memory throughout the call. Remember previous details given by the user.\n\n"
 
+        "CONVERSATIONAL CONTROL & DRAFT CLEANLINESS (CRITICAL):\n"
+        "- VOICE CONTROL WORDS: Words like 'Wait', 'Hold on', 'Stop', 'Pause', 'Cancel', 'Ruko' are direct commands to YOU.\n"
+        "- NEVER put words like 'Wait', 'Hold on', or conversational pauses inside email bodies, email subjects, task titles, or meeting subjects!\n"
+        "- If the user says 'Wait' or 'Hold on', pause immediately and respond warmly and briefly: 'Sure, standing by.' or 'Take your time.' Do NOT call draft tools while waiting.\n\n"
+
         "CALENDAR & TASK INTELLIGENCE:\n"
         "- UPCOMING EVENTS: Filter and report only future or today's events (ignore past events unless asked).\n"
         "- TO-DO TASKS: Report active/pending or overdue tasks (ignore completed tasks unless asked).\n\n"
