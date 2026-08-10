@@ -80,83 +80,158 @@
     .logo-text { font-size: 1.15rem; font-weight: 700; letter-spacing: 0.3px; }
     .logo-sub { font-size: 0.7rem; color: var(--accent); margin-top: 1px; font-weight: 500; letter-spacing: 0.05em; }
 
-    /* Agent Selector */
-    .agent-section { padding: 14px 12px 10px; }
-    .agent-section-label {
-      font-size: 0.65rem; font-weight: 700; color: var(--muted2);
-      text-transform: uppercase; letter-spacing: 0.12em;
-      padding: 0 6px; margin-bottom: 8px;
+    /* New Chat button */
+    .new-chat-top-btn {
+      margin: 12px 12px 4px;
+      width: calc(100% - 24px);
+      padding: 9px 14px; background: var(--primary-dim);
+      border: 1px solid rgba(108,99,255,0.3); border-radius: 10px;
+      color: var(--primary); font-family: inherit; font-size: 0.88rem;
+      font-weight: 700; cursor: pointer; display: flex; align-items: center;
+      gap: 8px; justify-content: center; transition: all 0.2s;
     }
-    .agent-cards { display: flex; flex-direction: column; gap: 6px; }
+    .new-chat-top-btn:hover { background: rgba(108,99,255,0.28); }
 
-    .agent-card {
-      display: flex; align-items: center; gap: 12px;
-      padding: 11px 14px; border-radius: 12px;
-      border: 1px solid transparent; cursor: pointer;
-      background: transparent;
-      color: var(--muted); font-family: inherit; font-size: 0.9rem; font-weight: 500;
+    /* Nav items */
+    .nav-menu { padding: 8px 12px; display: flex; flex-direction: column; gap: 4px; }
+    .nav-item {
+      padding: 10px 14px; background: transparent; border: 1px solid transparent;
+      border-radius: 10px; color: var(--muted); font-family: inherit;
+      font-size: 0.9rem; font-weight: 500;
+      cursor: pointer; display: flex; align-items: center; gap: 10px;
       transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
       text-align: left; width: 100%;
     }
-    .agent-card:hover { background: var(--surface2); color: var(--text); transform: translateX(3px); }
-    .agent-card.active {
-      background: var(--primary-dim);
-      border-color: rgba(108,99,255,0.35);
-      color: #fff;
-      box-shadow: inset 0 0 0 1px rgba(108,99,255,0.2);
-    }
-    .agent-card.active.live-card {
-      background: rgba(16,185,129,0.12);
-      border-color: rgba(16,185,129,0.3);
-      box-shadow: inset 0 0 0 1px rgba(16,185,129,0.15);
-    }
-    .agent-card-icon {
-      width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center; font-size: 16px;
-      background: var(--surface3);
-    }
-    .agent-card.active .agent-card-icon { background: rgba(108,99,255,0.25); }
-    .agent-card.active.live-card .agent-card-icon { background: rgba(16,185,129,0.2); }
-    .agent-card-info { display: flex; flex-direction: column; gap: 1px; flex: 1; }
-    .agent-card-name { font-weight: 600; font-size: 0.9rem; }
-    .agent-card-desc { font-size: 0.7rem; color: var(--muted); }
-    .agent-live-dot {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: var(--green); flex-shrink: 0;
-      animation: liveDotPulse 2s ease-in-out infinite;
-      display: none;
-    }
-    .agent-live-dot.visible { display: block; }
-    @keyframes liveDotPulse {
-      0%,100% { opacity:1; transform:scale(1); }
-      50% { opacity:0.4; transform:scale(0.6); }
-    }
+    .nav-item:hover { background: var(--surface2); color: var(--text); transform: translateX(3px); }
+    .nav-item.active { background: var(--primary-dim); color: #fff; border-color: rgba(108,99,255,0.3); box-shadow: 0 3px 10px var(--primary-dim); }
 
-    /* Nav section */
-    .nav-section { padding: 10px 12px 6px; }
-    .nav-section-label {
-      font-size: 0.65rem; font-weight: 700; color: var(--muted2);
-      text-transform: uppercase; letter-spacing: 0.12em;
-      padding: 0 6px; margin-bottom: 8px;
+    /* ── Live Agent Sidebar Widget ── */
+    .live-widget {
+      margin: 0 12px 8px;
+      border-radius: 14px;
+      border: 1px solid rgba(108,99,255,0.25);
+      background: rgba(16,12,40,0.7);
+      backdrop-filter: blur(12px);
+      overflow: hidden;
+      display: none;
+      flex-direction: column;
+      animation: widgetSlideIn 0.3s cubic-bezier(0.4,0,0.2,1);
     }
-    .nav-items { display: flex; flex-direction: column; gap: 4px; }
-    .nav-item {
-      padding: 9px 14px; background: transparent; border: 1px solid transparent;
-      border-radius: 9px; color: var(--muted); font-family: inherit;
-      font-size: 0.88rem; font-weight: 500;
-      cursor: pointer; display: flex; align-items: center; gap: 10px;
-      transition: all 0.2s; text-align: left; width: 100%;
+    .live-widget.open { display: flex; }
+    @keyframes widgetSlideIn {
+      from { opacity:0; transform: translateY(-8px) scale(0.97); }
+      to   { opacity:1; transform: translateY(0) scale(1); }
     }
-    .nav-item:hover { background: var(--surface2); color: var(--text); }
-    .nav-item.active { background: var(--surface2); color: var(--text); border-color: var(--border-light); }
+    .live-widget-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .live-widget-title {
+      font-size: 0.78rem; font-weight: 700; color: var(--text);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .live-widget-close {
+      background: none; border: none; color: var(--muted);
+      font-size: 1rem; cursor: pointer; line-height: 1;
+      transition: color 0.2s; padding: 2px;
+    }
+    .live-widget-close:hover { color: var(--text); }
+    .live-widget-body {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 14px 12px 16px; gap: 10px;
+    }
+    /* Widget status chip */
+    .w-status-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 12px; font-size: 0.74rem;
+      font-weight: 600; background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border-light); color: var(--muted);
+      transition: all 0.35s;
+    }
+    .w-status-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--muted2); transition: background 0.35s, box-shadow 0.35s;
+    }
+    /* Widget orb */
+    .w-orb-wrap { position: relative; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; }
+    .w-orb-ring {
+      position: absolute; inset: 0; border-radius: 50%;
+      border: 1.5px solid rgba(108,99,255,0.2);
+      animation: wOrbRing 2.8s ease-in-out infinite;
+    }
+    .w-orb-ring:nth-child(2) { animation-delay: 0.9s; }
+    @keyframes wOrbRing {
+      0% { transform: scale(0.9); opacity:0.5; }
+      100% { transform: scale(1.6); opacity:0; }
+    }
+    .w-orb {
+      width: 66px; height: 66px; border-radius: 50%; position: relative; z-index: 2;
+      background: linear-gradient(135deg, rgba(108,99,255,0.35), rgba(0,210,255,0.2));
+      border: 2px solid rgba(108,99,255,0.45);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; cursor: pointer;
+      box-shadow: 0 0 28px rgba(108,99,255,0.2);
+      transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+    }
+    .w-orb:hover { transform: scale(1.06); }
+    /* Widget orb states */
+    .live-widget[data-state="connecting"] .w-orb { border-color: var(--amber); animation: wOrbSpin 1s linear infinite; box-shadow: 0 0 24px var(--amber-glow); }
+    @keyframes wOrbSpin { to { transform: rotate(360deg); } }
+    .live-widget[data-state="listening"] .w-orb {
+      background: linear-gradient(135deg, rgba(244,63,94,0.4), rgba(244,63,94,0.15));
+      border-color: var(--red); box-shadow: 0 0 30px var(--red-glow);
+      animation: wOrbListen 1.4s ease-in-out infinite;
+    }
+    @keyframes wOrbListen {
+      0%,100% { transform: scale(1); } 50% { transform: scale(1.08); }
+    }
+    .live-widget[data-state="thinking"] .w-orb {
+      background: linear-gradient(135deg, rgba(0,210,255,0.3), rgba(108,99,255,0.2));
+      border-color: var(--accent); box-shadow: 0 0 28px var(--accent-glow);
+      animation: wOrbThink 0.9s ease-in-out infinite alternate;
+    }
+    @keyframes wOrbThink { from{transform:scale(1);} to{transform:scale(1.07);} }
+    .live-widget[data-state="speaking"] .w-orb {
+      background: linear-gradient(135deg, rgba(16,185,129,0.4), rgba(0,210,255,0.2));
+      border-color: var(--green); box-shadow: 0 0 36px var(--green-glow);
+      animation: wOrbSpeak 0.75s ease-in-out infinite;
+    }
+    @keyframes wOrbSpeak {
+      0%,100% { transform: scale(1); } 50% { transform: scale(1.1); }
+    }
+    /* Widget state dot colors */
+    .live-widget[data-state="connecting"] .w-status-dot { background: var(--amber); box-shadow: 0 0 6px var(--amber-glow); animation: dotBlink 0.6s infinite; }
+    .live-widget[data-state="listening"]  .w-status-dot { background: var(--red);   box-shadow: 0 0 6px var(--red-glow);   animation: dotBlink 1s infinite; }
+    .live-widget[data-state="thinking"]  .w-status-dot { background: var(--accent); box-shadow: 0 0 6px var(--accent-glow); animation: dotBlink 0.5s infinite; }
+    .live-widget[data-state="speaking"]  .w-status-dot { background: var(--green);  box-shadow: 0 0 6px var(--green-glow); }
+    .live-widget[data-state="connecting"] .w-status-chip { border-color: rgba(245,158,11,0.4); color: var(--amber); }
+    .live-widget[data-state="listening"]  .w-status-chip { border-color: rgba(244,63,94,0.4);  color: #ff7090; }
+    .live-widget[data-state="thinking"]   .w-status-chip { border-color: rgba(0,210,255,0.4);  color: var(--accent); }
+    .live-widget[data-state="speaking"]   .w-status-chip { border-color: rgba(16,185,129,0.4); color: var(--green); }
+    /* Widget transcript */
+    .w-transcript {
+      font-size: 0.76rem; color: var(--muted); text-align: center;
+      line-height: 1.5; min-height: 32px; transition: all 0.3s;
+      padding: 0 4px;
+    }
+    .w-transcript.has-text { color: var(--text); }
+    /* Widget end button */
+    .w-end-btn {
+      display: none; align-items: center; gap: 6px;
+      padding: 7px 16px; border-radius: 20px; font-family: inherit;
+      font-size: 0.78rem; font-weight: 600; cursor: pointer;
+      background: rgba(244,63,94,0.12); border: 1px solid rgba(244,63,94,0.3);
+      color: var(--red); transition: all 0.2s;
+    }
+    .w-end-btn.visible { display: flex; }
+    .w-end-btn:hover { background: rgba(244,63,94,0.22); }
 
     /* Chat History */
     .conv-section {
       flex: 1; display: flex; flex-direction: column;
       overflow: hidden; border-top: 1px solid var(--border);
-      transition: opacity 0.2s;
     }
-    .conv-section.hidden { opacity: 0; pointer-events: none; }
     .conv-section-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 12px 16px 8px;
@@ -639,6 +714,21 @@
       animation: spin 0.8s linear infinite; margin: 0 auto;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes dotBlink { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
+
+    /* Live input button */
+    .live-input-btn {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; color: var(--green); flex-shrink: 0; font-size: 0.75rem;
+      font-weight: 700; font-family: inherit; letter-spacing: 0.02em;
+    }
+    .live-input-btn:hover { background: rgba(16,185,129,0.22); border-color: var(--green); transform: scale(1.05); }
+    .live-input-btn.active {
+      background: rgba(244,63,94,0.15); border-color: rgba(244,63,94,0.5); color: var(--red);
+      animation: micPulse 1.4s infinite;
+    }
 
     /* Thinking dots for chat */
     .thinking-dots span {
@@ -679,35 +769,41 @@
       </div>
     </div>
 
-    <!-- Agent Selection -->
-    <div class="agent-section">
-      <div class="agent-section-label">Agents</div>
-      <div class="agent-cards">
-        <button class="agent-card active" id="agentChatCard" onclick="selectAgent('chat')">
-          <div class="agent-card-icon">💬</div>
-          <div class="agent-card-info">
-            <div class="agent-card-name">Chat Agent</div>
-            <div class="agent-card-desc">Text + Voice-to-Text</div>
-          </div>
-        </button>
-        <button class="agent-card live-card" id="agentLiveCard" onclick="selectAgent('live')">
-          <div class="agent-card-icon">🎙️</div>
-          <div class="agent-card-info">
-            <div class="agent-card-name">Live Agent</div>
-            <div class="agent-card-desc">Realtime Voice Conversation</div>
-          </div>
-          <div class="agent-live-dot" id="agentLiveDot"></div>
-        </button>
-      </div>
-    </div>
+    <!-- New Chat button -->
+    <button class="new-chat-top-btn" onclick="newConversation()">➕ New Chat</button>
 
-    <!-- Nav Items -->
-    <div class="nav-section">
-      <div class="nav-section-label">Workspace</div>
-      <div class="nav-items">
-        <button class="nav-item" id="nav-email" onclick="switchView('email')">📧 Mailbox</button>
-        <button class="nav-item" id="nav-calendar" onclick="switchView('calendar')">📅 Calendar</button>
-        <button class="nav-item" id="nav-todo" onclick="switchView('todo')">☑️ Tasks</button>
+    <!-- Simple Nav -->
+    <nav class="nav-menu">
+      <button class="nav-item active" id="nav-chat" onclick="switchView('chat')">💬 Chat Agent</button>
+      <button class="nav-item" id="nav-email" onclick="switchView('email')">📧 Mailbox</button>
+      <button class="nav-item" id="nav-calendar" onclick="switchView('calendar')">📅 Calendar</button>
+      <button class="nav-item" id="nav-todo" onclick="switchView('todo')">☑️ Tasks</button>
+    </nav>
+
+    <!-- Live Agent Sidebar Widget (shown when Live button in input is pressed) -->
+    <div class="live-widget" id="liveWidget" data-state="idle">
+      <div class="live-widget-header">
+        <div class="live-widget-title">
+          <span>🎙️</span> Live Agent
+        </div>
+        <button class="live-widget-close" onclick="closeLiveWidget()" title="Close">✕</button>
+      </div>
+      <div class="live-widget-body">
+        <div class="w-status-chip">
+          <div class="w-status-dot" id="wStatusDot"></div>
+          <span id="wStatusText">Ready to connect</span>
+        </div>
+        <div class="w-orb-wrap">
+          <div class="w-orb-ring"></div>
+          <div class="w-orb-ring"></div>
+          <div class="w-orb" id="wOrb" onclick="handleWidgetOrbClick()" title="Start / Stop">
+            <span id="wOrbIcon">🤖</span>
+          </div>
+        </div>
+        <div class="w-transcript" id="wTranscript">Tap orb to start conversation</div>
+        <button class="w-end-btn" id="wEndBtn" onclick="disconnectLiveBot()">
+          ◼ End Call
+        </button>
       </div>
     </div>
 
@@ -766,7 +862,8 @@
       <div class="input-bar">
         <div class="input-wrap" id="inputWrap">
           <textarea id="messageInput" placeholder="Ask Jarvis anything..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-          <button class="mic-btn" id="micBtn" title="Voice to text (click to speak)">🎤</button>
+          <button class="mic-btn" id="micBtn" title="Voice to text — speak then review and send">🎤</button>
+          <button class="live-input-btn" id="liveInputBtn" onclick="toggleLiveWidget()" title="Open Live Voice Agent">LIVE</button>
           <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send message">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           </button>
@@ -971,8 +1068,8 @@
   let currentConvId = null;
   let isLoading = false;
   let currentView = 'chat';
-  let currentAgent = 'chat'; // 'chat' | 'live'
   let currentEmailFolder = 'inbox';
+  let liveWidgetOpen = false;
 
   // STT (Chat Agent)
   let recognizer = null;
@@ -1024,22 +1121,46 @@
     } catch(e) { window.location.href = '/login.html'; }
   }
 
-  /* ─────────────────────────────────────────
-     AGENT SELECTION
-  ───────────────────────────────────────── */
-  function selectAgent(agent) {
-    currentAgent = agent;
-
-    document.getElementById('agentChatCard').classList.toggle('active', agent === 'chat');
-    document.getElementById('agentLiveCard').classList.toggle('active', agent === 'live');
-
-    // Show/hide chat history section
-    document.getElementById('convSection').classList.toggle('hidden', agent !== 'chat');
-
-    if (agent === 'chat') {
-      switchView('chat');
+  /* ───────────────────────────────────────────
+     LIVE WIDGET CONTROLS (sidebar panel)
+  ─────────────────────────────────────────── */
+  function toggleLiveWidget() {
+    if (liveWidgetOpen) {
+      closeLiveWidget();
     } else {
-      switchView('live-assistant');
+      openLiveWidget();
+    }
+  }
+
+  function openLiveWidget() {
+    liveWidgetOpen = true;
+    const widget = document.getElementById('liveWidget');
+    const btn = document.getElementById('liveInputBtn');
+    if (widget) widget.classList.add('open');
+    if (btn) btn.classList.add('active');
+    // Auto-connect if not already connected
+    if (!isLiveBotActive && liveAgentState !== 'connecting') {
+      connectLiveBot();
+    }
+  }
+
+  function closeLiveWidget() {
+    liveWidgetOpen = false;
+    const widget = document.getElementById('liveWidget');
+    const btn = document.getElementById('liveInputBtn');
+    if (widget) widget.classList.remove('open');
+    if (btn) btn.classList.remove('active');
+    // Disconnect if call was active
+    if (isLiveBotActive) {
+      disconnectLiveBot();
+    }
+  }
+
+  function handleWidgetOrbClick() {
+    if (isLiveBotActive) {
+      disconnectLiveBot();
+    } else if (liveAgentState !== 'connecting') {
+      connectLiveBot();
     }
   }
 
@@ -1049,33 +1170,21 @@
   function switchView(view) {
     currentView = view;
 
-    // Update nav items highlight (workspace only)
+    // Update nav items
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     const navEl = document.getElementById('nav-' + view);
     if (navEl) navEl.classList.add('active');
 
-    // Switch visible view
+    // Switch view panel
     document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
     const target = document.getElementById('view-' + view);
     if (target) target.classList.add('active');
 
-    // Topbar
-    const titles = {
-      'chat': 'Chat Agent',
-      'live-assistant': 'Live Agent',
-      'email': 'Mailbox',
-      'calendar': 'Calendar',
-      'todo': 'Tasks'
-    };
-    const subs = {
-      'chat': 'Text & Voice-to-Text',
-      'live-assistant': 'Realtime Voice Conversation',
-      'email': 'Microsoft Outlook',
-      'calendar': 'Pakistan Standard Time',
-      'todo': 'Microsoft To-Do'
-    };
+    // Topbar text
+    const titles = { 'chat':'Chat Agent', 'email':'Mailbox', 'calendar':'Calendar', 'todo':'Tasks' };
+    const subs   = { 'chat':'Text & Voice-to-Text', 'email':'Microsoft Outlook', 'calendar':'Pakistan Standard Time', 'todo':'Microsoft To-Do' };
     document.getElementById('viewTitle').textContent = titles[view] || 'Jarvis';
-    document.getElementById('viewSub').textContent = subs[view] || '';
+    document.getElementById('viewSub').textContent   = subs[view] || '';
 
     const actions = document.getElementById('topbarActions');
     actions.innerHTML = '';
@@ -1257,27 +1366,35 @@
 
   function setLiveState(state) {
     liveAgentState = state;
-    const liveView = document.getElementById('liveView');
-    const statusText = document.getElementById('liveStatusText');
-    const orbIcon = document.getElementById('liveOrbIcon');
-    const endBtn = document.getElementById('liveEndBtn');
-    const liveDot = document.getElementById('agentLiveDot');
-    const hintEl = document.getElementById('liveHint');
+    // Target the sidebar widget elements
+    const widget    = document.getElementById('liveWidget');
+    const statusTxt = document.getElementById('wStatusText');
+    const orbIcon   = document.getElementById('wOrbIcon');
+    const endBtn    = document.getElementById('wEndBtn');
+    const liveBtn   = document.getElementById('liveInputBtn');
 
-    if (liveView) liveView.setAttribute('data-state', state);
+    if (widget) widget.setAttribute('data-state', state);
 
-    const cfg = LIVE_STATE_CONFIG[state] || LIVE_STATE_CONFIG.idle;
-    if (statusText) statusText.textContent = cfg.text;
-    if (orbIcon) orbIcon.textContent = cfg.icon;
-    if (hintEl) hintEl.textContent = cfg.hint;
+    const icons = {
+      idle:'🤖', connecting:'⚡', listening:'🎤',
+      thinking:'💭', speaking:'🔊', ended:'🤖'
+    };
+    const texts = {
+      idle:'Ready to connect', connecting:'Connecting...',
+      listening:'Listening...', thinking:'Thinking...',
+      speaking:'Speaking...', ended:'Call ended'
+    };
+
+    if (statusTxt) statusTxt.textContent = texts[state] || 'Ready';
+    if (orbIcon) orbIcon.textContent = icons[state] || '🤖';
 
     const isActive = ['connecting','listening','thinking','speaking'].includes(state);
     if (endBtn) endBtn.classList.toggle('visible', isActive);
-    if (liveDot) liveDot.classList.toggle('visible', isActive);
+    if (liveBtn) liveBtn.classList.toggle('active', isActive);
   }
 
   function setLiveTranscript(text) {
-    const el = document.getElementById('liveTranscript');
+    const el = document.getElementById('wTranscript');
     if (!el) return;
     el.textContent = text;
     el.classList.toggle('has-text', !!text);
@@ -1421,10 +1538,15 @@
   function cleanupLiveBotUI() {
     isLiveBotActive = false;
     liveKitRoom = null;
+    liveWidgetOpen = false;
     stopBargeInMonitor();
     setLiveState('ended');
-    setLiveTranscript('Conversation ended. Tap the orb to start again.');
-    document.getElementById('agentLiveDot').classList.remove('visible');
+    setLiveTranscript('Conversation ended. Tap orb to start again.');
+    // Hide widget and reset live button
+    const widget = document.getElementById('liveWidget');
+    const liveBtn = document.getElementById('liveInputBtn');
+    if (widget) widget.classList.remove('open');
+    if (liveBtn) liveBtn.classList.remove('active');
   }
 
   /* ─────────────────────────────────────────
@@ -1664,7 +1786,7 @@
     currentConvId = id;
     document.getElementById('viewTitle').textContent = title || 'Conversation';
     document.getElementById('chatArea').innerHTML = '';
-    if (currentView !== 'chat') selectAgent('chat');
+    if (currentView !== 'chat') switchView('chat');
     try {
       const r = await fetch(`/api/conversations/${id}/messages`);
       const msgs = await r.json();
@@ -1693,7 +1815,7 @@
       </div>`;
     document.querySelectorAll('.conv-item').forEach(i => i.classList.remove('active'));
     document.getElementById('viewTitle').textContent = 'Chat Agent';
-    if (currentView !== 'chat') selectAgent('chat');
+    if (currentView !== 'chat') switchView('chat');
     await loadConversations();
     if (input) input.focus();
   }
