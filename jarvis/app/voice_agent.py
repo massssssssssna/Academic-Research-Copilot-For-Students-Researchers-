@@ -128,6 +128,12 @@ def get_system_instructions() -> str:
         "- If the user says 'Hi', 'Hello', or 'Hey' — reply warmly and briefly, e.g.: 'Hey! What's up?' or 'Hey there! What can I do for you?'\n"
         "- Never mention the date or time unless the user explicitly asks.\n\n"
 
+        "CONVERSATIONAL MEMORY & MULTI-TURN CONTEXT (CRITICAL):\n"
+        "- REMEMBER EVERYTHING SAID PREVIOUSLY in this ongoing call session!\n"
+        "- If the user previously said 'Make a draft email', and then in the next turn provides 'to massna@gmail.com' or 'subject Project Update', ALWAYS connect these details to the draft request!\n"
+        "- Never forget or lose context of what topic, email, meeting, or task was discussed in the previous turns.\n"
+        "- Accumulate email recipient, subject, and content across multiple turns before calling create_draft_email.\n\n"
+
         "INTERACTIVE STYLE (ChatGPT-like):\n"
         "- EMAIL DRAFTS: If recipient, subject, or body is missing, ask naturally: 'Who's this email going to, and what should it say?'\n"
         "- TASKS & MEETINGS: If date/time is missing, ask: 'What time works for you?' or 'When's the deadline?'\n"
@@ -328,11 +334,11 @@ async def entrypoint(ctx: JobContext) -> None:
 
     if _HAS_TURN_OPTIONS:
         turn_opts = TurnHandlingOptions(
-            min_endpointing_delay=0.4,
-            max_endpointing_delay=1.2,
+            min_endpointing_delay=1.0,
+            max_endpointing_delay=2.5,
             allow_interruptions=True,
-            min_interruption_duration=0.05,
-            min_interruption_words=1,
+            min_interruption_duration=0.3,
+            min_interruption_words=2,
         )
         session = AgentSession(
             stt=stt_impl,
@@ -348,11 +354,11 @@ async def entrypoint(ctx: JobContext) -> None:
             llm=voice_llm,
             tts=tts_impl,
             tools=agent_tools,
-            min_endpointing_delay=0.4,
-            max_endpointing_delay=1.2,
+            min_endpointing_delay=1.0,
+            max_endpointing_delay=2.5,
             allow_interruptions=True,
-            min_interruption_duration=0.05,
-            min_interruption_words=1,
+            min_interruption_duration=0.3,
+            min_interruption_words=2,
         )
 
 

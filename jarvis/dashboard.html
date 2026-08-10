@@ -1579,8 +1579,8 @@
         }
         const speechAvg = speechSum / (endBin - startBin);
 
-        // Speech threshold: 16 in human voice band (ignores background AC/fan hum <100Hz and room hiss >4kHz)
-        if (speechAvg > 16) {
+        // Speech threshold: 28 in human voice band (requires clear direct speech to interrupt, ignoring background chatter & TV)
+        if (speechAvg > 28) {
           // User is speaking — immediately stop & remove agent audio
           if (agentAudioEl) {
             try { agentAudioEl.pause(); agentAudioEl.srcObject = null; } catch(e) {}
