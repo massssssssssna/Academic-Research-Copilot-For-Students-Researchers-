@@ -1570,15 +1570,16 @@
         if (!bargeInAnalyser || liveAgentState !== 'speaking') return;
         bargeInAnalyser.getByteFrequencyData(buf);
         const avg = buf.reduce((a,b) => a+b, 0) / buf.length;
-        if (avg > 22) {
-          // User is speaking — interrupt agent audio
+        // Threshold 12 = sensitive enough to catch speech, ignores background hiss (~6)
+        if (avg > 12) {
+          // User is speaking — immediately stop & remove agent audio
           if (agentAudioEl) {
-            try { agentAudioEl.pause(); } catch(e) {}
+            try { agentAudioEl.pause(); agentAudioEl.srcObject = null; } catch(e) {}
           }
           stopBargeInMonitor();
-          setLiveState('listening');
-          setLiveTranscript('Got it — listening to you...');
           stream.getTracks().forEach(t => t.stop());
+          setLiveState('listening');
+          setLiveTranscript('Listening...');
           return;
         }
         bargeInAnimFrame = requestAnimationFrame(check);

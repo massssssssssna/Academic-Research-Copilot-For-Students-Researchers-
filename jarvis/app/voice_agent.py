@@ -69,6 +69,13 @@ load_dotenv(override=True)
 
 from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli, llm
 from livekit.agents.voice import Agent, AgentSession
+try:
+    from livekit.agents.voice import TurnHandlingOptions
+    _HAS_TURN_OPTIONS = True
+except ImportError:
+    _HAS_TURN_OPTIONS = False
+    logger_tmp = logging.getLogger("jarvis-voice-agent")
+    logger_tmp.warning("TurnHandlingOptions not available — using legacy kwargs.")
 from livekit.plugins import cartesia, deepgram, groq
 
 from app.config import settings
@@ -122,8 +129,12 @@ class JarvisAgent(Agent):
         super().__init__(instructions=get_system_instructions())
 
     async def on_enter(self) -> None:
-        logger.info("Jarvis Agent entered session — waiting silently for user prompt.")
-        # Jarvis remains completely silent on join and only responds when the user speaks!
+        """Say a short greeting immediately when the user connects."""
+        logger.info("Jarvis Agent entered session — sending greeting.")
+        await self.session.say(
+            "Hi! I'm Jarvis. How can I help you?",
+            allow_interruptions=True,
+        )
 
 
 from livekit.plugins import cartesia, deepgram, groq, openai
@@ -281,17 +292,34 @@ async def entrypoint(ctx: JobContext) -> None:
 
     logger.info(f"Configured Voice Agent FallbackAdapter with {len(llm_pool)} failover instances across {len(groq_keys)} Groq API key(s).")
 
-    session = AgentSession(
-        stt=stt_impl,
-        llm=voice_llm,
-        tts=tts_impl,
-        tools=agent_tools,
-        min_endpointing_delay=1.0,
-        max_endpointing_delay=2.0,
-        allow_interruptions=True,
-        min_interruption_duration=0.1,
-        min_interruption_words=1,
-    )
+    if _HAS_TURN_OPTIONS:
+        turn_opts = TurnHandlingOptions(
+            min_endpointing_delay=0.4,
+            max_endpointing_delay=1.2,
+            allow_interruptions=True,
+            min_interruption_duration=0.05,
+            min_interruption_words=1,
+        )
+        session = AgentSession(
+            stt=stt_impl,
+            llm=voice_llm,
+            tts=tts_impl,
+            tools=agent_tools,
+            turn_handling=turn_opts,
+        )
+    else:
+        # Fallback for older livekit-agents versions
+        session = AgentSession(
+            stt=stt_impl,
+            llm=voice_llm,
+            tts=tts_impl,
+            tools=agent_tools,
+            min_endpointing_delay=0.4,
+            max_endpointing_delay=1.2,
+            allow_interruptions=True,
+            min_interruption_duration=0.05,
+            min_interruption_words=1,
+        )
 
 
 
