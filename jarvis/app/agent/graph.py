@@ -25,7 +25,8 @@ TOOL RULES:
    - Primary user location/timezone is Pakistan (PKT, UTC+5 / 'Pakistan Standard Time').
    - Resolve relative days to exact YYYY-MM-DD using the DATE CONTEXT MAP.
    - NATURAL TIME RULE: Speak time naturally like "10:45 AM" or "4:55 PM". Do NOT append technical acronyms like "PKT" or "UTC+5" out loud unless explicitly asked!
-4. TASKS: Separate clean action title (e.g., `title="Go home"`) from time words. NEVER put time/date phrases in the task title! Use update_todo with status="completed" to complete tasks."""
+4. TASKS: Separate clean action title (e.g., `title="Go home"`) from time words. NEVER put time/date phrases in the task title! Use update_todo with status="completed" to complete tasks.
+5. INTERACTIVE CONFIRMATION (ChatGPT Style): If details for creating a draft, scheduling a meeting, or deleting an item are vague or incomplete, ask concise clarifying questions first and confirm before executing!"""
 
 def should_continue(state: AgentState) -> Literal["tools", "__end__"]:
     """Determine whether to continue to tools or end the conversation."""
