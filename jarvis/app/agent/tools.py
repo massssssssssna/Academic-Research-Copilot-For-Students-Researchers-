@@ -240,11 +240,67 @@ def summarize_and_draft_reply(session_id: str, message_id: str, custom_notes: Op
 # ---------------------------------------------------------
 
 @tool(args_schema=GetEventsSchema)
-def get_events(session_id: str, top: int = 10, start_datetime: Optional[str] = None, end_datetime: Optional[str] = None) -> str:
-    """Fetch the user's calendar events."""
+def get_events(session_id: str, top: int = 15, start_datetime: Optional[str] = None, end_datetime: Optional[str] = None) -> str:
+    """Fetch the user's calendar events, strictly categorized into Upcoming, Today, and Past events."""
     try:
         client = MicrosoftGraphClient(session_id)
-        return str(client.get_events(top=top, start_datetime=start_datetime, end_datetime=end_datetime))
+        now_utc = datetime.now(timezone.utc)
+        today_str = now_utc.strftime("%Y-%m-%d")
+        
+        # If no explicit date range provided, fetch from today to 30 days ahead
+        if not start_datetime:
+            start_datetime = now_utc.strftime("%Y-%m-%dT00:00:00Z")
+            end_datetime = (now_utc + timedelta(days=30)).strftime("%Y-%m-%dT23:59:59Z")
+
+        raw_res = client.get_events(top=top, start_datetime=start_datetime, end_datetime=end_datetime)
+        if isinstance(raw_res, dict) and "value" in raw_res:
+            events = raw_res["value"]
+            if not events:
+                return "No calendar events found."
+            
+            today_events = []
+            upcoming_events = []
+            past_events = []
+            
+            for ev in events:
+                ev_id = ev.get("id", "")
+                subject = ev.get("subject", "Untitled Event")
+                start_obj = ev.get("start", {})
+                end_obj = ev.get("end", {})
+                
+                s_raw = start_obj.get("dateTime", "")
+                e_raw = end_obj.get("dateTime", "")
+                
+                s_dt = s_raw[:16].replace("T", " ") if s_raw else "Unknown start"
+                e_dt = e_raw[:16].replace("T", " ") if e_raw else "Unknown end"
+                tz = start_obj.get("timeZone", "UTC")
+                loc = ev.get("location", {}).get("displayName", "")
+                loc_str = f" | Location: {loc}" if loc else ""
+                
+                item_text = f"- ID: {ev_id}\n  Subject: '{subject}'\n  Time: {s_dt} to {e_dt} ({tz}){loc_str}"
+                
+                if s_raw:
+                    s_date = s_raw.split("T")[0] if "T" in s_raw else s_raw[:10]
+                    if s_date == today_str:
+                        today_events.append(item_text)
+                    elif s_date > today_str:
+                        upcoming_events.append(item_text)
+                    else:
+                        past_events.append(item_text)
+                else:
+                    upcoming_events.append(item_text)
+            
+            res_lines = [f"Calendar Events Overview (Current UTC Date: {today_str}):"]
+            if today_events:
+                res_lines.append("\n📅 TODAY'S / PRESENT EVENTS:\n" + "\n".join(today_events))
+            if upcoming_events:
+                res_lines.append("\n🔮 UPCOMING / FUTURE EVENTS:\n" + "\n".join(upcoming_events))
+            if past_events:
+                res_lines.append("\n📜 PAST EVENTS:\n" + "\n".join(past_events))
+                
+            return "\n".join(res_lines)
+            
+        return str(raw_res)
     except Exception as e:
         return _format_error(e)
 
@@ -337,7 +393,7 @@ def get_todo_lists(session_id: str) -> str:
 
 @tool(args_schema=GetTodosSchema)
 def get_todos(session_id: str, list_id: Optional[str] = None) -> str:
-    """Fetch tasks from a specific To-Do list."""
+    """Fetch tasks from a specific To-Do list, clearly categorized into Pending, Overdue, and Completed tasks."""
     try:
         client = MicrosoftGraphClient(session_id)
         resolved_list_id = _resolve_list_id(client, list_id)
@@ -346,15 +402,40 @@ def get_todos(session_id: str, list_id: Optional[str] = None) -> str:
             tasks = raw_res["value"]
             if not tasks:
                 return "No tasks found in your To-Do list."
-            formatted = []
+            
+            today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            overdue_tasks = []
+            pending_tasks = []
+            completed_tasks = []
+            
             for t in tasks:
+                t_id = t.get("id", "")
                 t_title = t.get("title", "Untitled Task")
                 t_status = t.get("status", "notStarted")
                 due_dt = t.get("dueDateTime", {})
                 due_val = due_dt.get("dateTime", "") if isinstance(due_dt, dict) else ""
+                due_date_str = due_val[:10] if due_val else ""
                 due_info = f" | Due: {due_val[:16].replace('T', ' ')}" if due_val else " | No due date"
-                formatted.append(f"- Title: '{t_title}'{due_info} | Status: {t_status}")
-            return "\n".join(formatted)
+                
+                item_text = f"- ID: {t_id}\n  Title: '{t_title}'{due_info} | Status: {t_status}"
+                
+                if t_status == "completed":
+                    completed_tasks.append(item_text)
+                elif due_date_str and due_date_str < today_str:
+                    overdue_tasks.append(item_text + " [OVERDUE]")
+                else:
+                    pending_tasks.append(item_text)
+            
+            res_lines = [f"To-Do Tasks Overview (Current Date: {today_str}):"]
+            if overdue_tasks:
+                res_lines.append("\n⚠️ OVERDUE TASKS:\n" + "\n".join(overdue_tasks))
+            if pending_tasks:
+                res_lines.append("\n☑️ PENDING / UPCOMING TASKS:\n" + "\n".join(pending_tasks))
+            if completed_tasks:
+                res_lines.append("\n✅ COMPLETED TASKS:\n" + "\n".join(completed_tasks))
+                
+            return "\n".join(res_lines)
+            
         return str(raw_res)
     except Exception as e:
         return _format_error(e)

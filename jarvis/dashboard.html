@@ -1501,13 +1501,12 @@
 
       await liveKitRoom.connect(data.ws_url, data.token);
 
-      // Enable mic with noise cancellation
+      // Enable mic with robust noise suppression & echo cancellation
       await liveKitRoom.localParticipant.setMicrophoneEnabled(true, {
-        echoCancellation: { exact: true },
-        noiseSuppression: { exact: true },
-        autoGainControl: { exact: true },
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
         channelCount: 1,
-        sampleRate: 48000,
       });
 
       isLiveBotActive = true;
@@ -1551,14 +1550,16 @@
 
   /* ─────────────────────────────────────────
      BARGE-IN (Interruption) via Web Audio API
-     When user speaks while agent is speaking:
-     detect mic energy → stop agent audio → switch to listening
+     Targeted speech-band frequency analysis (300Hz-3400Hz)
+     Ignores background hum, fan noise & room hiss
   ───────────────────────────────────────── */
   async function startBargeInMonitor() {
     stopBargeInMonitor();
     if (!isLiveBotActive) return;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+      });
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       bargeInSource = audioCtx.createMediaStreamSource(stream);
       bargeInAnalyser = audioCtx.createAnalyser();
@@ -1569,9 +1570,17 @@
       const check = () => {
         if (!bargeInAnalyser || liveAgentState !== 'speaking') return;
         bargeInAnalyser.getByteFrequencyData(buf);
-        const avg = buf.reduce((a,b) => a+b, 0) / buf.length;
-        // Threshold 12 = sensitive enough to catch speech, ignores background hiss (~6)
-        if (avg > 12) {
+        
+        // Calculate average specifically in human speech frequency range (bins 3 to 40, ~300Hz-3400Hz)
+        let speechSum = 0;
+        const startBin = 3, endBin = 40;
+        for (let i = startBin; i < endBin; i++) {
+          speechSum += buf[i];
+        }
+        const speechAvg = speechSum / (endBin - startBin);
+
+        // Speech threshold: 16 in human voice band (ignores background AC/fan hum <100Hz and room hiss >4kHz)
+        if (speechAvg > 16) {
           // User is speaking — immediately stop & remove agent audio
           if (agentAudioEl) {
             try { agentAudioEl.pause(); agentAudioEl.srcObject = null; } catch(e) {}
