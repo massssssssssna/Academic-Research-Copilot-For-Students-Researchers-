@@ -1434,6 +1434,8 @@
         if (track.kind === LivekitClient.Track.Kind.Audio) {
           // Remove previous agent audio element
           if (agentAudioEl) { try { agentAudioEl.pause(); agentAudioEl.remove(); } catch(e){} }
+          currentAgentAudioTrack = track;
+          if (track.mediaStreamTrack) track.mediaStreamTrack.enabled = true;
           agentAudioEl = track.attach();
           agentAudioEl.autoplay = true;
           document.body.appendChild(agentAudioEl);
@@ -1581,9 +1583,18 @@
 
         // Speech threshold: 8 (ultra-responsive to ANY spoken word or sound, instantly stopping agent audio)
         if (speechAvg > 8) {
-          // User is speaking — immediately stop & remove agent audio
+          // User is speaking — immediately mute hardware mediaStreamTrack & destroy audio element for 0ms instant silence
+          if (currentAgentAudioTrack && currentAgentAudioTrack.mediaStreamTrack) {
+            try { currentAgentAudioTrack.mediaStreamTrack.enabled = false; } catch(e) {}
+          }
           if (agentAudioEl) {
-            try { agentAudioEl.pause(); agentAudioEl.srcObject = null; } catch(e) {}
+            try {
+              agentAudioEl.pause();
+              agentAudioEl.muted = true;
+              agentAudioEl.srcObject = null;
+              agentAudioEl.remove();
+            } catch(e) {}
+            agentAudioEl = null;
           }
           stopBargeInMonitor();
           stream.getTracks().forEach(t => t.stop());

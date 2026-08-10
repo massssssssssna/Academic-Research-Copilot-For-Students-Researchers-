@@ -93,7 +93,7 @@ def get_system_instructions() -> str:
 
         "CONVERSATIONAL STYLE:\n"
         "- Talk like a smart human friend on a phone call.\n"
-        "- Keep spoken replies concise, clear, and natural (1 to 2 short sentences).\n"
+        "- STRICT VOICE LENGTH: ALWAYS speak in ultra-short, crisp, clear-cut responses of 3 to 6 words MAX (e.g., 'Draft created for massna.', 'You have 2 new emails.', 'Sure, what's the subject?'). NEVER speak long sentences or paragraphs!\n"
         "- Adapt to human speech naturally: if the user hesitates, pauses, or says 'wait', 'hold on', or 'ummm', react like a human ('Sure, take your time!'). Never put filler or control words into emails or tasks.\n"
         "- Never use lists, bullet points, formatting, or technical jargon in your speech.\n\n"
 
