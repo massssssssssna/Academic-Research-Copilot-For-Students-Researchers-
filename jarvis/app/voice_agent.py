@@ -177,16 +177,16 @@ async def entrypoint(ctx: JobContext) -> None:
     groq_key = settings.GROQ_API_KEY or os.getenv("GROQ_API_KEY")
     openai_key = settings.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY")
 
-    if groq_key:
-        logger.info("Using Groq Whisper STT (whisper-large-v3) for multilingual & accent-resilient speech recognition.")
-        stt_impl = groq.STT(api_key=groq_key, model="whisper-large-v3")
-    elif deepgram_key:
-        logger.info("Using Deepgram STT (nova-2-general).")
+    if deepgram_key:
+        logger.info("Using Deepgram STT (nova-2-conversationalai) with smart formatting.")
         stt_impl = deepgram.STT(
             api_key=deepgram_key,
-            model="nova-2-general",
+            model="nova-2-conversationalai",
             smart_format=True
         )
+    elif groq_key:
+        logger.info("Using Groq Whisper STT (whisper-large-v3).")
+        stt_impl = groq.STT(api_key=groq_key, model="whisper-large-v3")
     elif openai_key:
         stt_impl = openai.STT(api_key=openai_key)
     else:
