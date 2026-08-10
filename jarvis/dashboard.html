@@ -846,6 +846,13 @@
       document.getElementById('userName').textContent = u.name || 'User';
       document.getElementById('userEmail').textContent = u.email || '';
       document.getElementById('userAvatar').textContent = (u.name || u.email || '?')[0].toUpperCase();
+      
+      // Auto-refresh active view every 30s so new incoming emails/events show in real-time
+      setInterval(() => {
+        if (currentView === 'email') loadEmails(currentEmailFolder);
+        else if (currentView === 'calendar') loadEvents();
+        else if (currentView === 'todo') loadTodos();
+      }, 30000);
     } catch(e) { window.location.href = '/login.html'; }
   }
 
