@@ -146,6 +146,123 @@ async def entrypoint(ctx: JobContext) -> None:
         logger.info("Using High-Quality Free Edge-TTS (Microsoft Ava Neural).")
         tts_impl = EdgeTTS(voice="en-US-AvaNeural")
 
+    import json
+    session_id = ""
+    if ctx.room.metadata:
+        try:
+            m_data = json.loads(ctx.room.metadata)
+            session_id = m_data.get("session_id", "")
+        except Exception:
+            pass
+
+    if not session_id:
+        for p in ctx.room.remote_participants.values():
+            if p.metadata:
+                try:
+                    m_data = json.loads(p.metadata)
+                    session_id = m_data.get("session_id", "")
+                    if session_id: break
+                except Exception:
+                    pass
+
+    logger.info(f"LiveKit Agent session user authenticated session_id: {session_id[:8] if session_id else 'None'}...")
+
+    # Define LiveKit function tools bound to current session_id
+    @llm.function_tool(description="Fetch latest emails from user inbox or drafts folder ('inbox' or 'drafts').")
+    async def get_user_emails(folder: str = "inbox") -> str:
+        if not session_id: return "No active user session."
+        from app.agent.tools import get_emails
+        return get_emails.invoke({"session_id": session_id, "folder": folder, "top": 5})
+
+    @llm.function_tool(description="Read full content of a specific email by message_id.")
+    async def read_user_email(message_id: str) -> str:
+        if not session_id: return "No active user session."
+        from app.agent.tools import get_email
+        return get_email.invoke({"session_id": session_id, "message_id": message_id})
+
+    @llm.function_tool(description="Create a draft email in Microsoft Outlook.")
+    async def create_draft_email(subject: str, content: str, to_recipients: str) -> str:
+        if not session_id: return "No active user session."
+        from app.agent.tools import create_email_draft
+        recipients = [r.strip() for r in to_recipients.split(",") if r.strip()]
+        return create_email_draft.invoke({"session_id": session_id, "subject": subject, "content": content, "to_recipients": recipients})
+
+    @llm.function_tool(description="Delete a specific email or draft email by message_id.")
+    async def delete_user_email(message_id: str) -> str:
+        if not session_id: return "No active user session."
+        from app.agent.tools import delete_email
+        return delete_email.invoke({"session_id": session_id, "message_id": message_id})
+
+    @llm.function_tool(description="Delete ALL draft emails in the user's Outlook Drafts folder.")
+    async def delete_all_user_drafts() -> str:
+        if not session_id: return "No active user session."
+        from app.agent.tools import delete_all_drafts
+        return delete_all_drafts.invoke({"session_id": session_id})
+
+    @llm.function_tool(description="Summarize an incoming inbox email and create a draft reply.")
+    async def summarize_and_draft(message_id: str, custom_notes: str = "") -> str:
+        if not session_id: return "No active user session."
+        from app.agent.tools import summarize_and_draft_reply
+        return summarize_and_draft_reply.invoke({"session_id": session_id, "message_id": message_id, "custom_notes": custom_notes})
+
+    @llm.function_tool(description="Fetch calendar events for the user.")
+    async def get_calendar_events() -> str:
+        if not session_id: return "No active user session."
+        from app.agent.tools import get_events
+        return get_events.invoke({"session_id": session_id, "top": 5})
+
+    @llm.function_tool(description="Create a calendar event/meeting in Pakistan Standard Time (PKT, UTC+5).")
+    async def create_calendar_event(subject: str, start_time: str, end_time: str, time_zone: str = "Pakistan Standard Time") -> str:
+        if not session_id: return "No active user session."
+        from app.agent.tools import create_event
+        return create_event.invoke({"session_id": session_id, "subject": subject, "start_time": start_time, "end_time": end_time, "time_zone": time_zone})
+
+    @llm.function_tool(description="Delete a calendar event/meeting by event_id.")
+    async def delete_calendar_event(event_id: str) -> str:
+        if not session_id: return "No active user session."
+        from app.agent.tools import delete_event
+        return delete_event.invoke({"session_id": session_id, "event_id": event_id})
+
+    @llm.function_tool(description="Fetch user To-Do task list.")
+    async def get_todo_tasks() -> str:
+        if not session_id: return "No active user session."
+        from app.agent.tools import get_todos
+        return get_todos.invoke({"session_id": session_id})
+
+    @llm.function_tool(description="Create a new To-Do task.")
+    async def create_todo_task(title: str, due_date: str = "", due_time: str = "") -> str:
+        if not session_id: return "No active user session."
+        from app.agent.tools import create_todo
+        return create_todo.invoke({"session_id": session_id, "title": title, "due_date": due_date, "due_time": due_time})
+
+    @llm.function_tool(description="Mark a To-Do task as completed by task_id.")
+    async def complete_todo_task(task_id: str) -> str:
+        if not session_id: return "No active user session."
+        from app.agent.tools import update_todo
+        return update_todo.invoke({"session_id": session_id, "task_id": task_id, "status": "completed"})
+
+    @llm.function_tool(description="Delete a task from To-Do list by task_id.")
+    async def delete_todo_task(task_id: str) -> str:
+        if not session_id: return "No active user session."
+        from app.agent.tools import delete_todo
+        return delete_todo.invoke({"session_id": session_id, "task_id": task_id})
+
+    agent_tools = [
+        get_user_emails,
+        read_user_email,
+        create_draft_email,
+        delete_user_email,
+        delete_all_user_drafts,
+        summarize_and_draft,
+        get_calendar_events,
+        create_calendar_event,
+        delete_calendar_event,
+        get_todo_tasks,
+        create_todo_task,
+        complete_todo_task,
+        delete_todo_task
+    ]
+
     from livekit.agents.llm import FallbackAdapter
     groq_keys = settings.get_groq_api_keys()
     if not groq_keys:
