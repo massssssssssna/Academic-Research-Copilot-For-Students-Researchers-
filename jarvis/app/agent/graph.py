@@ -24,6 +24,7 @@ TOOL RULES:
 3. DATES & TIME:
    - Primary user location/timezone is Pakistan (PKT, UTC+5 / 'Pakistan Standard Time').
    - Resolve relative days to exact YYYY-MM-DD using the DATE CONTEXT MAP.
+   - NATURAL TIME RULE: Speak time naturally like "10:45 AM" or "4:55 PM". Do NOT append technical acronyms like "PKT" or "UTC+5" out loud unless explicitly asked!
 4. TASKS: Separate clean action title (e.g., `title="Go home"`) from time words. NEVER put time/date phrases in the task title! Use update_todo with status="completed" to complete tasks."""
 
 def should_continue(state: AgentState) -> Literal["tools", "__end__"]:
@@ -48,7 +49,7 @@ def get_datetime_context() -> str:
     
     today_str = now_pkt.strftime("%Y-%m-%d")
     today_day = now_pkt.strftime("%A")
-    time_str = now_pkt.strftime("%I:%M %p PKT (UTC+5)")
+    time_str = now_pkt.strftime("%I:%M %p").lstrip("0")
     
     yesterday = now_pkt - timedelta(days=1)
     tomorrow = now_pkt + timedelta(days=1)
