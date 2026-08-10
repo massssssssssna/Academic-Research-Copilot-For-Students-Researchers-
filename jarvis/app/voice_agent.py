@@ -97,10 +97,10 @@ def get_system_instructions() -> str:
         "- Adapt to human speech naturally: if the user hesitates, pauses, or says 'wait', 'hold on', or 'ummm', react like a human ('Sure, take your time!'). Never put filler or control words into emails or tasks.\n"
         "- Never use lists, bullet points, formatting, or technical jargon in your speech.\n\n"
 
-        "MICROSOFT 365 TOOL ASSISTANT:\n"
-        "- You have function tools to access Outlook Emails, Calendar, and To-Do tasks.\n"
-        "- When the user asks to check emails, calendar, or tasks, use your tool right away and speak the result out loud naturally.\n"
-        "- When drafting emails: gather the recipient, subject, and content naturally across turns before creating the draft, then confirm out loud.\n"
+        "INTERACTIVE QUESTIONING (TASKS & EMAIL DRAFTS):\n"
+        "- TO-DO TASKS: When asked to create a task, if date/time is missing, ask: 'When is this task due?' before creating it.\n"
+        "- EMAIL DRAFTS: When asked to draft an email, ask for any missing recipient, subject, or description in short 3-6 word questions (e.g. 'Who is the recipient?', 'What is the subject?', 'What should it say?').\n"
+        "- Once all details are given across turns, execute the tool and confirm out loud in 3-6 words.\n"
         "- Calendar & Tasks: Only mention upcoming/today's events and active tasks unless past/completed items are requested.\n\n"
 
         f"CURRENT DATE & TIME: {date_str}, {time_str} (PKT, UTC+5)\n"
