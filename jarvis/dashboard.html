@@ -3,379 +3,720 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Jarvis — Dashboard</title>
+  <title>Jarvis — AI Copilot</title>
+  <meta name="description" content="Jarvis AI Copilot — Manage emails, calendar, and tasks with voice or text."/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.6.0/dist/livekit-client.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     :root {
-      --bg: #090a0f;
-      --sidebar: rgba(16, 19, 26, 0.65);
-      --surface: rgba(22, 26, 35, 0.55);
-      --surface2: rgba(30, 35, 45, 0.7);
-      --border: rgba(255, 255, 255, 0.06);
-      --border-light: rgba(255, 255, 255, 0.12);
+      --bg: #070810;
+      --sidebar-bg: rgba(12, 14, 22, 0.92);
+      --surface: rgba(20, 23, 35, 0.7);
+      --surface2: rgba(28, 32, 48, 0.85);
+      --surface3: rgba(36, 40, 60, 0.6);
+      --border: rgba(255,255,255,0.06);
+      --border-light: rgba(255,255,255,0.12);
       --primary: #6c63ff;
-      --primary-dim: rgba(108, 99, 255, 0.15);
-      --primary-glow: rgba(108, 99, 255, 0.35);
+      --primary-dim: rgba(108,99,255,0.18);
+      --primary-glow: rgba(108,99,255,0.4);
       --accent: #00d2ff;
-      --accent-glow: rgba(0, 210, 255, 0.35);
+      --accent-glow: rgba(0,210,255,0.4);
       --green: #10b981;
+      --green-glow: rgba(16,185,129,0.4);
       --red: #f43f5e;
-      --text: #f8fafc;
+      --red-glow: rgba(244,63,94,0.4);
+      --amber: #f59e0b;
+      --amber-glow: rgba(245,158,11,0.4);
+      --text: #f0f4ff;
       --muted: #94a3b8;
       --muted2: #475569;
-      --glass-blur: blur(16px);
-      --shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      --glass-blur: blur(18px);
+      --shadow: 0 8px 32px rgba(0,0,0,0.3);
+      --radius: 14px;
     }
-    body, html { height: 100%; font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
-    
-    /* Global Glassmorphism Background Pattern */
+
+    body, html {
+      height: 100%; font-family: 'Outfit', sans-serif;
+      background: var(--bg); color: var(--text); overflow: hidden;
+    }
+
     body::before {
-      content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-      background: radial-gradient(circle at 50% 50%, rgba(108,99,255,0.05) 0%, transparent 50%),
-                  radial-gradient(circle at 80% 20%, rgba(0,210,255,0.05) 0%, transparent 40%);
-      z-index: -1; pointer-events: none;
+      content: ''; position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 20% 0%, rgba(108,99,255,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 80% 100%, rgba(0,210,255,0.05) 0%, transparent 60%);
+      pointer-events: none; z-index: 0;
     }
 
     .app { display: flex; height: 100vh; position: relative; z-index: 1; }
 
-    /* ── Sidebar ── */
+    /* ════════════════════════════════════════
+       SIDEBAR
+    ════════════════════════════════════════ */
     .sidebar {
-      width: 280px; flex-shrink: 0; background: var(--sidebar);
-      backdrop-filter: var(--glass-blur); border-right: 1px solid var(--border);
-      display: flex; flex-direction: column; overflow: hidden;
+      width: 270px; flex-shrink: 0;
+      background: var(--sidebar-bg);
+      backdrop-filter: var(--glass-blur);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow: hidden; position: relative;
     }
-    .sidebar-header { padding: 24px 20px 20px; display: flex; align-items: center; gap: 14px; }
+
+    .sidebar-header {
+      padding: 22px 18px 16px;
+      display: flex; align-items: center; gap: 12px;
+      border-bottom: 1px solid var(--border);
+    }
     .logo-icon {
-      width: 42px; height: 42px; border-radius: 12px;
+      width: 40px; height: 40px; border-radius: 12px;
       background: linear-gradient(135deg, var(--primary), var(--accent));
       display: flex; align-items: center; justify-content: center;
-      font-size: 20px; font-weight: 800; color: #fff; flex-shrink: 0;
+      font-size: 18px; font-weight: 800; color: #fff; flex-shrink: 0;
       box-shadow: 0 0 20px var(--primary-glow);
     }
-    .logo-text { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.5px; }
-    .logo-sub { font-size: 0.75rem; color: var(--accent); margin-top: 2px; font-weight: 500; }
+    .logo-text { font-size: 1.15rem; font-weight: 700; letter-spacing: 0.3px; }
+    .logo-sub { font-size: 0.7rem; color: var(--accent); margin-top: 1px; font-weight: 500; letter-spacing: 0.05em; }
 
-    .nav-menu { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
-    .nav-item {
-      padding: 12px 16px; background: transparent; border: 1px solid transparent;
-      border-radius: 10px; color: var(--muted); font-family: inherit; font-size: 0.95rem; font-weight: 500;
-      cursor: pointer; display: flex; align-items: center; gap: 12px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      text-align: left;
+    /* Agent Selector */
+    .agent-section { padding: 14px 12px 10px; }
+    .agent-section-label {
+      font-size: 0.65rem; font-weight: 700; color: var(--muted2);
+      text-transform: uppercase; letter-spacing: 0.12em;
+      padding: 0 6px; margin-bottom: 8px;
     }
-    .nav-item:hover { background: var(--surface2); color: var(--text); transform: translateX(4px); }
-    .nav-item.active { background: var(--primary-dim); color: #fff; border-color: rgba(108,99,255,0.3); box-shadow: 0 4px 12px var(--primary-dim); }
+    .agent-cards { display: flex; flex-direction: column; gap: 6px; }
 
-    .conv-section { flex: 1; display: flex; flex-direction: column; overflow: hidden; margin-top: 10px; }
-    .sidebar-label { padding: 0 20px 8px; font-size: 0.7rem; font-weight: 700; color: var(--muted2); text-transform: uppercase; letter-spacing: 0.1em; }
-    .conv-list { flex: 1; overflow-y: auto; padding: 0 12px; }
+    .agent-card {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 14px; border-radius: 12px;
+      border: 1px solid transparent; cursor: pointer;
+      background: transparent;
+      color: var(--muted); font-family: inherit; font-size: 0.9rem; font-weight: 500;
+      transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+      text-align: left; width: 100%;
+    }
+    .agent-card:hover { background: var(--surface2); color: var(--text); transform: translateX(3px); }
+    .agent-card.active {
+      background: var(--primary-dim);
+      border-color: rgba(108,99,255,0.35);
+      color: #fff;
+      box-shadow: inset 0 0 0 1px rgba(108,99,255,0.2);
+    }
+    .agent-card.active.live-card {
+      background: rgba(16,185,129,0.12);
+      border-color: rgba(16,185,129,0.3);
+      box-shadow: inset 0 0 0 1px rgba(16,185,129,0.15);
+    }
+    .agent-card-icon {
+      width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+      background: var(--surface3);
+    }
+    .agent-card.active .agent-card-icon { background: rgba(108,99,255,0.25); }
+    .agent-card.active.live-card .agent-card-icon { background: rgba(16,185,129,0.2); }
+    .agent-card-info { display: flex; flex-direction: column; gap: 1px; flex: 1; }
+    .agent-card-name { font-weight: 600; font-size: 0.9rem; }
+    .agent-card-desc { font-size: 0.7rem; color: var(--muted); }
+    .agent-live-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green); flex-shrink: 0;
+      animation: liveDotPulse 2s ease-in-out infinite;
+      display: none;
+    }
+    .agent-live-dot.visible { display: block; }
+    @keyframes liveDotPulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50% { opacity:0.4; transform:scale(0.6); }
+    }
+
+    /* Nav section */
+    .nav-section { padding: 10px 12px 6px; }
+    .nav-section-label {
+      font-size: 0.65rem; font-weight: 700; color: var(--muted2);
+      text-transform: uppercase; letter-spacing: 0.12em;
+      padding: 0 6px; margin-bottom: 8px;
+    }
+    .nav-items { display: flex; flex-direction: column; gap: 4px; }
+    .nav-item {
+      padding: 9px 14px; background: transparent; border: 1px solid transparent;
+      border-radius: 9px; color: var(--muted); font-family: inherit;
+      font-size: 0.88rem; font-weight: 500;
+      cursor: pointer; display: flex; align-items: center; gap: 10px;
+      transition: all 0.2s; text-align: left; width: 100%;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: var(--surface2); color: var(--text); border-color: var(--border-light); }
+
+    /* Chat History */
+    .conv-section {
+      flex: 1; display: flex; flex-direction: column;
+      overflow: hidden; border-top: 1px solid var(--border);
+      transition: opacity 0.2s;
+    }
+    .conv-section.hidden { opacity: 0; pointer-events: none; }
+    .conv-section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px 8px;
+    }
+    .conv-section-label {
+      font-size: 0.65rem; font-weight: 700; color: var(--muted2);
+      text-transform: uppercase; letter-spacing: 0.12em;
+    }
+    .new-chat-btn {
+      background: var(--primary-dim); border: none; color: var(--primary);
+      font-size: 0.75rem; font-weight: 700; padding: 4px 10px;
+      border-radius: 6px; cursor: pointer; transition: all 0.2s; font-family: inherit;
+    }
+    .new-chat-btn:hover { background: rgba(108,99,255,0.3); }
+
+    .conv-list { flex: 1; overflow-y: auto; padding: 0 8px 8px; }
+    .conv-list::-webkit-scrollbar { width: 4px; }
+    .conv-list::-webkit-scrollbar-thumb { background: var(--muted2); border-radius: 99px; }
     .conv-item {
-      padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; color: var(--muted);
-      transition: all 0.2s; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px;
+      padding: 9px 12px; border-radius: 8px; cursor: pointer;
+      font-size: 0.83rem; color: var(--muted);
+      transition: all 0.2s; display: flex; align-items: center;
+      justify-content: space-between; gap: 8px; margin-bottom: 2px;
     }
     .conv-item:hover { background: var(--surface2); color: var(--text); }
-    .conv-item.active { color: var(--accent); font-weight: 600; }
-    .conv-title-wrap { display: flex; align-items: center; gap: 10px; flex: 1; overflow: hidden; }
+    .conv-item.active { color: var(--accent); background: rgba(0,210,255,0.07); }
+    .conv-title-wrap { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
     .conv-title-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
-    .conv-actions { display: none; align-items: center; gap: 4px; flex-shrink: 0; }
+    .conv-actions { display: none; align-items: center; gap: 3px; flex-shrink: 0; }
     .conv-item:hover .conv-actions, .conv-item.active .conv-actions { display: flex; }
-    .conv-action-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.78rem; padding: 2px 4px; border-radius: 4px; transition: all 0.15s; }
-    .conv-action-btn:hover { color: var(--text); background: rgba(255,255,255,0.12); }
-    .conv-action-btn.delete:hover { color: var(--red); background: rgba(255,92,124,0.15); }
+    .conv-action-btn {
+      background: none; border: none; color: var(--muted); cursor: pointer;
+      font-size: 0.75rem; padding: 2px 4px; border-radius: 4px; transition: 0.15s;
+    }
+    .conv-action-btn:hover { color: var(--text); background: rgba(255,255,255,0.1); }
+    .conv-action-btn.delete:hover { color: var(--red); background: rgba(244,63,94,0.15); }
 
-    .sidebar-footer { border-top: 1px solid var(--border); padding: 16px 20px; margin-top: auto; }
-    .user-info { display: flex; align-items: center; gap: 12px; overflow: hidden; }
+    /* Sidebar Footer */
+    .sidebar-footer {
+      border-top: 1px solid var(--border); padding: 14px 16px; margin-top: auto;
+    }
+    .user-info { display: flex; align-items: center; gap: 10px; }
     .avatar {
-      width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
       background: linear-gradient(135deg, var(--primary), var(--accent));
-      display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; color: #fff; font-size: 0.9rem;
     }
-    .user-details { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-    .user-name { font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .user-email { font-size: 0.72rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-details { flex: 1; min-width: 0; }
+    .user-name { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-email { font-size: 0.7rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .logout-btn {
-      margin-left: auto; background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.2); color: var(--red); cursor: pointer;
-      font-size: 0.75rem; padding: 6px 10px; border-radius: 6px; transition: all 0.2s; font-weight: 600; white-space: nowrap; flex-shrink: 0;
+      background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.2);
+      color: var(--red); cursor: pointer; font-size: 0.72rem; padding: 5px 9px;
+      border-radius: 6px; transition: 0.2s; font-weight: 600; white-space: nowrap;
+      flex-shrink: 0; font-family: inherit;
     }
-    .logout-btn:hover { background: rgba(244, 63, 94, 0.25); border-color: var(--red); }
+    .logout-btn:hover { background: rgba(244,63,94,0.25); border-color: var(--red); }
 
-    /* ── Main Area ── */
-    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: transparent; }
+    /* ════════════════════════════════════════
+       MAIN AREA
+    ════════════════════════════════════════ */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
     .topbar {
-      padding: 16px 30px; border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; gap: 16px; background: rgba(16, 19, 26, 0.4);
-      backdrop-filter: var(--glass-blur); z-index: 10;
+      padding: 14px 28px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 14px;
+      background: rgba(12,14,22,0.5); backdrop-filter: var(--glass-blur); z-index: 10;
+      flex-shrink: 0;
     }
-    .topbar-title { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.5px; }
-    .topbar-sub { font-size: 0.8rem; color: var(--muted); }
-    .topbar-actions { margin-left: auto; display: flex; gap: 12px; }
+    .topbar-title { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.3px; }
+    .topbar-sub { font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
+    .topbar-actions { margin-left: auto; display: flex; gap: 10px; align-items: center; }
 
     .view-container { display: none; flex: 1; flex-direction: column; overflow: hidden; }
-    .view-container.active { display: flex; animation: fadeInView 0.4s ease forwards; }
-    @keyframes fadeInView { from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+    .view-container.active { display: flex; animation: fadeView 0.3s ease; }
+    @keyframes fadeView { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
 
-    .content-area { flex: 1; overflow-y: auto; padding: 30px; }
-    .content-area::-webkit-scrollbar { width: 6px; }
+    .content-area { flex: 1; overflow-y: auto; padding: 28px; }
+    .content-area::-webkit-scrollbar { width: 5px; }
     .content-area::-webkit-scrollbar-thumb { background: var(--muted2); border-radius: 99px; }
 
-    /* Button styles */
+    /* ── Buttons ── */
     .btn {
-      padding: 10px 18px; border-radius: 8px; font-family: inherit; font-size: 0.9rem;
-      font-weight: 600; cursor: pointer; transition: all 0.2s; border: none;
-      display: flex; align-items: center; gap: 8px; justify-content: center;
+      padding: 9px 16px; border-radius: 9px; font-family: inherit;
+      font-size: 0.875rem; font-weight: 600; cursor: pointer;
+      transition: all 0.2s; border: none; display: inline-flex;
+      align-items: center; gap: 7px; justify-content: center;
     }
-    .btn-primary { background: linear-gradient(135deg, var(--primary), #857dff); color: #fff; box-shadow: 0 4px 15px var(--primary-glow); }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px var(--primary-glow); }
+    .btn-primary { background: linear-gradient(135deg, var(--primary), #857dff); color: #fff; box-shadow: 0 4px 14px var(--primary-glow); }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px var(--primary-glow); }
     .btn-outline { background: transparent; border: 1px solid var(--border-light); color: var(--text); }
     .btn-outline:hover { background: var(--surface2); border-color: var(--muted); }
-    .btn-danger { background: rgba(244, 63, 94, 0.1); color: var(--red); border: 1px solid rgba(244, 63, 94, 0.3); }
-    .btn-danger:hover { background: rgba(244, 63, 94, 0.2); }
-    /* Mic button & Voice Animations */
-    .mic-btn {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      background: var(--surface2);
-      border: 1px solid var(--border-light);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      color: var(--text);
-      margin-right: 4px;
-      flex-shrink: 0;
-      font-size: 1.1rem;
+    .btn-danger { background: rgba(244,63,94,0.1); color: var(--red); border: 1px solid rgba(244,63,94,0.3); }
+    .btn-danger:hover { background: rgba(244,63,94,0.2); }
+    .btn-green { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+    .btn-green:hover { background: rgba(16,185,129,0.25); }
+
+    /* ── Chat View ── */
+    .chat-area {
+      flex: 1; overflow-y: auto; padding: 24px 28px;
+      display: flex; flex-direction: column; gap: 20px;
     }
-    .mic-btn:hover { background: var(--primary-dim); border-color: var(--primary); color: var(--primary); transform: scale(1.05); }
+    .chat-area::-webkit-scrollbar { width: 5px; }
+    .chat-area::-webkit-scrollbar-thumb { background: var(--muted2); border-radius: 99px; }
+
+    .message { display: flex; gap: 14px; animation: msgIn 0.3s ease; max-width: 100%; }
+    @keyframes msgIn { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
+    .message.user { flex-direction: row-reverse; }
+
+    .msg-avatar {
+      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+    }
+    .message.assistant .msg-avatar { background: linear-gradient(135deg,var(--primary),var(--accent)); color:#fff; }
+    .message.user .msg-avatar { background: var(--surface2); color: var(--text); border: 1px solid var(--border-light); }
+    .msg-avatar.speaking { animation: avatarGlow 1.2s infinite ease-in-out alternate; }
+    @keyframes avatarGlow {
+      from { box-shadow: 0 0 5px var(--primary); transform: scale(1); }
+      to { box-shadow: 0 0 22px var(--accent); transform: scale(1.12); }
+    }
+
+    .msg-bubble {
+      max-width: 72%; padding: 14px 18px; border-radius: 16px;
+      font-size: 0.92rem; line-height: 1.65;
+    }
+    .message.assistant .msg-bubble {
+      background: var(--surface); border: 1px solid var(--border);
+      border-top-left-radius: 4px; backdrop-filter: blur(12px);
+    }
+    .message.user .msg-bubble {
+      background: linear-gradient(135deg, var(--primary), #857dff);
+      color: #fff; border-top-right-radius: 4px;
+      box-shadow: 0 4px 14px var(--primary-dim);
+    }
+
+    /* Chat Input Bar */
+    .input-bar {
+      padding: 18px 28px; border-top: 1px solid var(--border);
+      background: rgba(12,14,22,0.7); backdrop-filter: var(--glass-blur);
+      flex-shrink: 0; position: relative;
+    }
+    .input-wrap {
+      display: flex; gap: 10px; align-items: flex-end;
+      background: rgba(0,0,0,0.25); border: 1px solid var(--border);
+      border-radius: 14px; padding: 10px 14px; transition: all 0.2s;
+      position: relative;
+    }
+    .input-wrap:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-dim);
+    }
+    #messageInput {
+      flex: 1; background: none; border: none; outline: none;
+      color: var(--text); font-family: inherit; font-size: 0.93rem;
+      resize: none; max-height: 140px; min-height: 24px; line-height: 1.5;
+    }
+    #messageInput::placeholder { color: var(--muted2); }
+
+    .mic-btn {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: var(--surface2); border: 1px solid var(--border-light);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; color: var(--muted); flex-shrink: 0; font-size: 1.05rem;
+    }
+    .mic-btn:hover { background: var(--primary-dim); border-color: var(--primary); color: var(--primary); }
     .mic-btn.listening {
-      background: #f43f5e !important;
-      color: #ffffff !important;
-      border-color: #f43f5e !important;
-      animation: micPulse 1.5s infinite;
+      background: var(--red) !important; color: #fff !important;
+      border-color: var(--red) !important; animation: micPulse 1.4s infinite;
     }
     @keyframes micPulse {
-      0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7); transform: scale(1); }
-      50% { box-shadow: 0 0 0 10px rgba(244, 63, 94, 0); transform: scale(1.08); }
-      100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); transform: scale(1); }
+      0% { box-shadow: 0 0 0 0 var(--red-glow); }
+      70% { box-shadow: 0 0 0 10px rgba(244,63,94,0); }
+      100% { box-shadow: 0 0 0 0 rgba(244,63,94,0); }
     }
 
-    /* Speaking Avatar Glow */
-    .msg-avatar.speaking {
-      animation: avatarGlow 1.2s infinite ease-in-out alternate;
+    .send-btn {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: var(--primary); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; color: #fff; flex-shrink: 0;
+      box-shadow: 0 4px 12px var(--primary-glow);
     }
-    @keyframes avatarGlow {
-      from { transform: scale(1); box-shadow: 0 0 5px var(--primary); }
-      to { transform: scale(1.15); box-shadow: 0 0 20px var(--accent); }
+    .send-btn:hover { background: #857dff; transform: translateY(-1px) scale(1.05); }
+    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* STT listening badge */
+    .stt-badge {
+      position: absolute; top: -36px; left: 16px;
+      background: rgba(244,63,94,0.95); color: #fff;
+      font-size: 0.75rem; font-weight: 600; padding: 4px 12px;
+      border-radius: 10px; display: flex; align-items: center; gap: 6px;
+      pointer-events: none; z-index: 5;
+      animation: badgeSlide 0.2s ease;
+    }
+    @keyframes badgeSlide { from{opacity:0;transform:translateY(4px);} to{opacity:1;transform:translateY(0);} }
+    .stt-dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: dotBlink 1s infinite; }
+    @keyframes dotBlink { 0%,100%{opacity:1;} 50%{opacity:0.25;} }
+
+    /* Welcome Screen */
+    .welcome-screen {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; text-align: center;
+      padding: 60px 30px; flex: 1;
+    }
+    .welcome-orb {
+      width: 70px; height: 70px; border-radius: 50%; margin-bottom: 24px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 30px; box-shadow: 0 0 40px var(--primary-glow);
+      animation: orbFloat 3s ease-in-out infinite;
+    }
+    @keyframes orbFloat {
+      0%,100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .welcome-title { font-size: 1.7rem; font-weight: 800; margin-bottom: 10px; }
+    .welcome-sub { font-size: 0.92rem; color: var(--muted); max-width: 420px; line-height: 1.6; }
+    .welcome-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; justify-content: center; }
+    .welcome-chip {
+      padding: 7px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 500;
+      background: var(--surface2); border: 1px solid var(--border-light);
+      cursor: pointer; transition: all 0.2s; color: var(--muted);
+    }
+    .welcome-chip:hover { background: var(--primary-dim); border-color: rgba(108,99,255,0.4); color: var(--text); }
+
+    /* ════════════════════════════════════════
+       LIVE AGENT VIEW
+    ════════════════════════════════════════ */
+    .live-view {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 30px; position: relative; overflow: hidden;
     }
 
-    /* Listening badge */
-    .listening-badge {
-      position: absolute;
-      top: -34px;
-      left: 16px;
-      background: rgba(244, 63, 94, 0.95);
-      color: #fff;
-      font-size: 0.78rem;
-      font-weight: 600;
-      padding: 4px 12px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      box-shadow: 0 4px 12px rgba(244, 63, 94, 0.35);
-      animation: badgeSlide 0.25s ease forwards;
-      pointer-events: none;
-      z-index: 5;
+    /* Background ambient glow */
+    .live-view::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(circle 300px at 50% 40%, rgba(108,99,255,0.08) 0%, transparent 70%);
+      transition: background 0.8s;
     }
-    @keyframes badgeSlide { from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:translateY(0); } }
-    .listening-badge .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #fff;
-      animation: pulseDot 1s infinite;
+    .live-view[data-state="listening"]::before {
+      background: radial-gradient(circle 350px at 50% 40%, rgba(244,63,94,0.09) 0%, transparent 70%);
     }
-    @keyframes pulseDot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.7); } }
-
-    /* Forms & Inputs */
-    .input-field {
-      width: 100%; padding: 12px 16px; background: rgba(0,0,0,0.2); border: 1px solid var(--border);
-      border-radius: 8px; color: var(--text); font-family: inherit; font-size: 0.95rem; transition: all 0.2s;
+    .live-view[data-state="speaking"]::before {
+      background: radial-gradient(circle 350px at 50% 40%, rgba(16,185,129,0.09) 0%, transparent 70%);
     }
-    .input-field:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-dim); }
-    .form-group { margin-bottom: 16px; }
-    .form-group label { display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--muted); font-weight: 500; }
-
-    /* Cards & Lists */
-    .card {
-      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-      padding: 20px; transition: all 0.3s; backdrop-filter: var(--glass-blur);
+    .live-view[data-state="thinking"]::before {
+      background: radial-gradient(circle 350px at 50% 40%, rgba(0,210,255,0.08) 0%, transparent 70%);
     }
-    .card:hover { border-color: var(--border-light); transform: translateY(-2px); box-shadow: var(--shadow); }
-    
-    .list-grid { display: grid; gap: 16px; }
 
-    /* Email View */
-    .email-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-    .email-tab { padding: 8px 16px; cursor: pointer; color: var(--muted); font-weight: 600; transition: 0.2s; border-radius: 6px; }
-    .email-tab.active { background: var(--surface2); color: var(--text); }
-    .email-tab:hover:not(.active) { color: var(--text); }
+    /* Status chip */
+    .live-status-chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 7px 18px; border-radius: 20px; font-size: 0.82rem; font-weight: 600;
+      background: var(--surface2); border: 1px solid var(--border-light);
+      color: var(--muted); margin-bottom: 32px; transition: all 0.4s;
+      user-select: none;
+    }
+    .live-status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--muted2); transition: background 0.4s, box-shadow 0.4s;
+    }
 
-    .email-item { display: flex; flex-direction: column; gap: 8px; cursor: pointer; background: rgba(0,0,0,0.15); border: 1px solid transparent; }
-    .email-item:hover { border-color: rgba(108,99,255,0.4); background: rgba(0,0,0,0.25); transform: translateX(4px); box-shadow: -4px 0 0 var(--primary); }
+    /* State-based chip colors */
+    .live-view[data-state="connecting"] .live-status-chip { border-color: rgba(245,158,11,0.4); color: var(--amber); }
+    .live-view[data-state="connecting"] .live-status-dot { background: var(--amber); box-shadow: 0 0 8px var(--amber-glow); animation: dotBlink 0.7s infinite; }
+    .live-view[data-state="listening"] .live-status-chip { border-color: rgba(244,63,94,0.4); color: #ff6b8a; }
+    .live-view[data-state="listening"] .live-status-dot { background: var(--red); box-shadow: 0 0 8px var(--red-glow); animation: dotBlink 1s infinite; }
+    .live-view[data-state="thinking"] .live-status-chip { border-color: rgba(0,210,255,0.4); color: var(--accent); }
+    .live-view[data-state="thinking"] .live-status-dot { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); animation: dotBlink 0.5s infinite; }
+    .live-view[data-state="speaking"] .live-status-chip { border-color: rgba(16,185,129,0.4); color: var(--green); }
+    .live-view[data-state="speaking"] .live-status-dot { background: var(--green); box-shadow: 0 0 8px var(--green-glow); }
+
+    /* ORB */
+    .orb-container {
+      position: relative; width: 180px; height: 180px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 36px;
+    }
+    .orb-ring {
+      position: absolute; inset: 0; border-radius: 50%;
+      border: 1.5px solid rgba(108,99,255,0.25);
+      animation: orbRingExpand 3s ease-in-out infinite;
+    }
+    .orb-ring:nth-child(2) { animation-delay: 1s; }
+    .orb-ring:nth-child(3) { animation-delay: 2s; }
+    @keyframes orbRingExpand {
+      0% { transform: scale(0.9); opacity: 0.6; }
+      100% { transform: scale(1.5); opacity: 0; }
+    }
+
+    .live-orb {
+      width: 150px; height: 150px; border-radius: 50%;
+      background: linear-gradient(135deg, rgba(108,99,255,0.3), rgba(0,210,255,0.2));
+      border: 2px solid rgba(108,99,255,0.4);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; position: relative; z-index: 2;
+      box-shadow: 0 0 40px rgba(108,99,255,0.2);
+      transition: all 0.5s cubic-bezier(0.4,0,0.2,1);
+      outline: none;
+    }
+    .live-orb:hover { transform: scale(1.04); box-shadow: 0 0 60px rgba(108,99,255,0.35); }
+
+    .live-orb-inner {
+      font-size: 52px; transition: all 0.4s;
+      filter: drop-shadow(0 0 12px rgba(108,99,255,0.5));
+    }
+
+    /* Orb states */
+    .live-view[data-state="connecting"] .live-orb {
+      border-color: var(--amber); animation: orbSpin 1.2s linear infinite;
+      box-shadow: 0 0 40px var(--amber-glow);
+    }
+    @keyframes orbSpin {
+      0% { transform: scale(1) rotate(0deg); }
+      50% { transform: scale(1.05) rotate(180deg); }
+      100% { transform: scale(1) rotate(360deg); }
+    }
+    .live-view[data-state="listening"] .live-orb {
+      background: linear-gradient(135deg, rgba(244,63,94,0.35), rgba(244,63,94,0.15));
+      border-color: var(--red); animation: orbListen 1.5s ease-in-out infinite;
+      box-shadow: 0 0 50px var(--red-glow);
+    }
+    @keyframes orbListen {
+      0%,100% { transform: scale(1); box-shadow: 0 0 30px var(--red-glow); }
+      50% { transform: scale(1.08); box-shadow: 0 0 60px rgba(244,63,94,0.6); }
+    }
+    .live-view[data-state="thinking"] .live-orb {
+      background: linear-gradient(135deg, rgba(0,210,255,0.25), rgba(108,99,255,0.2));
+      border-color: var(--accent); animation: orbThink 1s ease-in-out infinite alternate;
+      box-shadow: 0 0 50px var(--accent-glow);
+    }
+    @keyframes orbThink {
+      from { transform: scale(1); }
+      to { transform: scale(1.06); }
+    }
+    .live-view[data-state="speaking"] .live-orb {
+      background: linear-gradient(135deg, rgba(16,185,129,0.35), rgba(0,210,255,0.2));
+      border-color: var(--green); animation: orbSpeak 0.8s ease-in-out infinite;
+      box-shadow: 0 0 60px var(--green-glow);
+    }
+    @keyframes orbSpeak {
+      0%,100% { transform: scale(1); box-shadow: 0 0 40px var(--green-glow); }
+      50% { transform: scale(1.1); box-shadow: 0 0 80px rgba(16,185,129,0.7); }
+    }
+
+    /* Transcript text */
+    .live-transcript {
+      font-size: 1rem; color: var(--muted); text-align: center;
+      max-width: 400px; line-height: 1.6; min-height: 50px;
+      transition: all 0.4s; margin-bottom: 32px;
+    }
+    .live-transcript.has-text { color: var(--text); }
+
+    /* End call button */
+    .live-end-btn {
+      display: none; align-items: center; gap: 8px;
+      padding: 11px 24px; border-radius: 30px; font-family: inherit;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer;
+      background: rgba(244,63,94,0.12); border: 1.5px solid rgba(244,63,94,0.35);
+      color: var(--red); transition: all 0.25s;
+    }
+    .live-end-btn.visible { display: flex; animation: btnFadeIn 0.3s ease; }
+    @keyframes btnFadeIn { from{opacity:0;transform:scale(0.9);} to{opacity:1;transform:scale(1);} }
+    .live-end-btn:hover { background: rgba(244,63,94,0.22); border-color: var(--red); transform: scale(1.03); }
+
+    /* Start hint */
+    .live-hint { font-size: 0.82rem; color: var(--muted2); text-align: center; margin-top: 14px; }
+
+    /* ── Email View ── */
+    .email-tabs { display: flex; gap: 6px; margin-bottom: 20px; }
+    .email-tab {
+      padding: 7px 16px; cursor: pointer; color: var(--muted);
+      font-weight: 600; font-size: 0.85rem; transition: 0.2s;
+      border-radius: 8px; border: 1px solid transparent;
+    }
+    .email-tab.active { background: var(--surface2); color: var(--text); border-color: var(--border-light); }
+    .email-tab:hover:not(.active) { color: var(--text); background: var(--surface3); }
+
+    .email-item {
+      display: flex; flex-direction: column; gap: 7px; cursor: pointer;
+      background: rgba(0,0,0,0.15); border: 1px solid transparent;
+    }
+    .email-item:hover { border-color: rgba(108,99,255,0.4); background: rgba(0,0,0,0.28); transform: translateX(3px); box-shadow: -3px 0 0 var(--primary); }
     .email-header { display: flex; justify-content: space-between; align-items: baseline; }
-    .email-sender { font-weight: 700; color: var(--accent); font-size: 1.05rem; }
-    .email-date { font-size: 0.75rem; color: var(--muted); font-weight: 500; }
-    .email-subject { font-size: 0.95rem; font-weight: 600; color: var(--text); }
-    .email-preview { font-size: 0.85rem; color: var(--muted2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; }
+    .email-sender { font-weight: 700; color: var(--accent); font-size: 1rem; }
+    .email-date { font-size: 0.72rem; color: var(--muted); font-weight: 500; }
+    .email-subject { font-size: 0.92rem; font-weight: 600; color: var(--text); }
+    .email-preview { font-size: 0.82rem; color: var(--muted2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    /* Calendar View */
-    .event-item { display: flex; gap: 16px; align-items: flex-start; }
-    .event-time { flex-shrink: 0; width: 100px; text-align: right; }
-    .event-time-start { font-weight: 600; color: var(--accent); font-size: 1.1rem; }
-    .event-time-date { font-size: 0.75rem; color: var(--muted); }
-    .event-details { flex: 1; background: rgba(0,0,0,0.15); padding: 12px 16px; border-radius: 8px; border-left: 3px solid var(--primary); }
-    .event-title { font-weight: 600; font-size: 1rem; margin-bottom: 4px; }
-    .event-loc { font-size: 0.8rem; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+    /* ── Calendar ── */
+    .event-item { display: flex; gap: 14px; align-items: flex-start; }
+    .event-time { flex-shrink: 0; width: 90px; text-align: right; }
+    .event-time-start { font-weight: 600; color: var(--accent); font-size: 1rem; }
+    .event-time-date { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+    .event-details { flex: 1; background: rgba(0,0,0,0.15); padding: 11px 15px; border-radius: 9px; border-left: 3px solid var(--primary); }
+    .event-title { font-weight: 600; font-size: 0.96rem; margin-bottom: 3px; }
+    .event-loc { font-size: 0.78rem; color: var(--muted); }
 
-    /* To-Do View */
-    .todo-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-    .todo-list-select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 6px; font-family: inherit; font-size: 0.9rem; cursor: pointer; }
-    .todo-item { display: flex; align-items: center; gap: 16px; padding: 14px; background: rgba(0,0,0,0.15); border: 1px solid var(--border); border-radius: 8px; transition: 0.2s; }
+    /* ── To-Do ── */
+    .todo-item {
+      display: flex; align-items: center; gap: 14px; padding: 13px;
+      background: rgba(0,0,0,0.15); border: 1px solid var(--border);
+      border-radius: 9px; transition: 0.2s;
+    }
     .todo-item:hover { border-color: var(--border-light); }
-    .todo-checkbox { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--primary); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .todo-checkbox {
+      width: 21px; height: 21px; border-radius: 6px; border: 2px solid var(--primary);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: 0.2s; flex-shrink: 0;
+    }
     .todo-checkbox.completed { background: var(--primary); }
-    .todo-checkbox.completed::after { content: '✓'; color: #fff; font-size: 14px; }
+    .todo-checkbox.completed::after { content: '✓'; color: #fff; font-size: 13px; }
     .todo-content { flex: 1; }
-    .todo-title { font-size: 1rem; font-weight: 500; transition: 0.2s; }
+    .todo-title { font-size: 0.95rem; font-weight: 500; }
     .todo-title.completed { text-decoration: line-through; color: var(--muted); }
-    .todo-meta { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
-    .todo-actions { display: flex; gap: 8px; opacity: 0.5; transition: 0.2s; }
+    .todo-meta { font-size: 0.73rem; color: var(--muted); margin-top: 3px; }
+    .todo-actions { opacity: 0.4; transition: 0.2s; display: flex; gap: 6px; }
     .todo-item:hover .todo-actions { opacity: 1; }
 
-    /* Chat View (Existing logic, adapted style) */
-    .chat-area { flex: 1; overflow-y: auto; padding: 24px 30px; display: flex; flex-direction: column; gap: 24px; }
-    .message { display: flex; gap: 16px; animation: msgIn 0.3s ease; }
-    @keyframes msgIn { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
-    .message.user { flex-direction: row-reverse; }
-    .msg-avatar { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-    .message.assistant .msg-avatar { background: linear-gradient(135deg,var(--primary),var(--accent)); color:#fff; }
-    .message.user .msg-avatar { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-    .msg-bubble { max-width: 75%; padding: 16px 20px; border-radius: 16px; font-size: 0.95rem; line-height: 1.6; letter-spacing: 0.2px; }
-    .message.assistant .msg-bubble { background: var(--surface); border: 1px solid var(--border); border-top-left-radius: 4px; backdrop-filter: var(--glass-blur); }
-    .message.user .msg-bubble { background: linear-gradient(135deg, var(--primary), #857dff); color: #fff; border-top-right-radius: 4px; box-shadow: 0 4px 15px var(--primary-dim); }
-    
-    .input-bar { padding: 20px 30px; border-top: 1px solid var(--border); background: rgba(16,19,26,0.6); backdrop-filter: var(--glass-blur); }
-    .input-wrap { display: flex; gap: 12px; align-items: flex-end; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 16px; padding: 12px 16px; transition: all 0.2s; position: relative; }
-    .input-wrap:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-dim); background: rgba(0,0,0,0.4); }
-    #messageInput { flex: 1; background: none; border: none; outline: none; color: var(--text); font-family: inherit; font-size: 0.95rem; resize: none; max-height: 150px; min-height: 24px; line-height: 1.5; }
-    .send-btn { width: 40px; height: 40px; border-radius: 12px; background: var(--primary); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; color: #fff; flex-shrink: 0; box-shadow: 0 4px 10px var(--primary-dim); }
-    .send-btn:hover { background: #857dff; transform: translateY(-2px) scale(1.05); }
+    /* ── Cards ── */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px;
+      transition: all 0.25s; backdrop-filter: blur(12px);
+    }
+    .card:hover { border-color: var(--border-light); transform: translateY(-1px); box-shadow: var(--shadow); }
+    .list-grid { display: grid; gap: 14px; }
 
-    /* Modals */
-    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px; opacity: 0; transition: opacity 0.3s; }
-    .modal-overlay.active { display: flex; opacity: 1; }
-    .modal { background: var(--surface2); border: 1px solid var(--border-light); border-radius: 16px; width: 100%; max-width: 600px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.5); transform: translateY(20px); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    .modal-overlay.active .modal { transform: translateY(0); }
-    .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-    .modal-title { font-size: 1.2rem; font-weight: 600; }
-    .modal-close { background: none; border: none; color: var(--muted); font-size: 1.5rem; cursor: pointer; transition: 0.2s; line-height: 1; }
+    /* ── Forms ── */
+    .input-field {
+      width: 100%; padding: 11px 14px; background: rgba(0,0,0,0.25);
+      border: 1px solid var(--border); border-radius: 9px;
+      color: var(--text); font-family: inherit; font-size: 0.9rem; transition: 0.2s;
+    }
+    .input-field:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-dim); }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; margin-bottom: 5px; font-size: 0.82rem; color: var(--muted); font-weight: 500; }
+
+    /* ── Modals ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(6px); z-index: 100;
+      display: none; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.active { display: flex; animation: fadeView 0.25s ease; }
+    .modal {
+      background: var(--surface2); border: 1px solid var(--border-light);
+      border-radius: 18px; width: 100%; max-width: 580px;
+      max-height: 90vh; display: flex; flex-direction: column;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+    }
+    .modal-header { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .modal-title { font-size: 1.1rem; font-weight: 700; }
+    .modal-close { background: none; border: none; color: var(--muted); font-size: 1.4rem; cursor: pointer; line-height: 1; transition: 0.2s; }
     .modal-close:hover { color: var(--text); }
-    .modal-body { padding: 24px; overflow-y: auto; }
-    .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 12px; }
+    .modal-body { padding: 22px; overflow-y: auto; }
+    .modal-footer { padding: 14px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
 
-    /* Toast */
-    #toast { position: fixed; bottom: 30px; right: 30px; background: var(--surface2); border: 1px solid var(--primary); border-radius: 12px; padding: 14px 20px; font-size: 0.9rem; font-weight: 500; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 15px var(--primary-dim); transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none; z-index: 200; }
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 28px; right: 28px;
+      background: var(--surface2); border: 1px solid var(--primary);
+      border-radius: 12px; padding: 12px 18px; font-size: 0.88rem; font-weight: 500;
+      color: #fff; box-shadow: 0 8px 28px rgba(0,0,0,0.5), 0 0 14px var(--primary-dim);
+      transform: translateY(16px); opacity: 0;
+      transition: all 0.3s cubic-bezier(0.4,0,0.2,1); pointer-events: none; z-index: 200;
+    }
     #toast.show { transform: translateY(0); opacity: 1; }
 
+    /* ── Misc ── */
     .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
-    .empty-icon { font-size: 3rem; margin-bottom: 16px; opacity: 0.5; }
-    
-    .loading-spinner { border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--primary); border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto; }
+    .empty-icon { font-size: 2.5rem; margin-bottom: 12px; opacity: 0.45; }
+    .loading-spinner {
+      border: 2.5px solid rgba(255,255,255,0.08); border-top-color: var(--primary);
+      border-radius: 50%; width: 22px; height: 22px;
+      animation: spin 0.8s linear infinite; margin: 0 auto;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Live Bot Assistant Styling */
-    .live-bot-btn {
-      width: 140px; height: 140px; border-radius: 50%;
-      background: linear-gradient(135deg, rgba(108,99,255,0.2), rgba(0,210,255,0.2));
-      border: 2px solid var(--primary); cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 0 30px var(--primary-glow);
-      position: relative; z-index: 2; outline: none;
+    /* Thinking dots for chat */
+    .thinking-dots span {
+      display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--muted); margin: 0 2px;
+      animation: tdot 1.2s ease-in-out infinite;
     }
-    .live-bot-btn:hover {
-      transform: scale(1.06);
-      box-shadow: 0 0 50px var(--accent-glow);
-      border-color: var(--accent);
-    }
-    .live-bot-btn.connecting {
-      animation: botSpin 1.5s linear infinite;
-      border-color: #f59e0b;
-      box-shadow: 0 0 30px rgba(245, 158, 11, 0.5);
-    }
-    @keyframes botSpin { 0% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.05) rotate(180deg); } 100% { transform: scale(1) rotate(360deg); } }
-    
-    .live-bot-btn.active {
-      background: linear-gradient(135deg, #10b981, #00d2ff) !important;
-      border-color: #10b981 !important;
-      box-shadow: 0 0 60px rgba(16, 185, 129, 0.6) !important;
-      animation: botPulse 2s infinite ease-in-out;
-    }
-    @keyframes botPulse {
-      0% { transform: scale(1); box-shadow: 0 0 30px rgba(16, 185, 129, 0.5); }
-      50% { transform: scale(1.1); box-shadow: 0 0 60px rgba(0, 210, 255, 0.8); }
-      100% { transform: scale(1); box-shadow: 0 0 30px rgba(16, 185, 129, 0.5); }
-    }
+    .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes tdot { 0%,60%,100%{transform:translateY(0);opacity:0.5;} 30%{transform:translateY(-5px);opacity:1;} }
 
-    .orb-waves {
-      position: absolute; width: 140px; height: 140px; border-radius: 50%;
-      border: 2px solid var(--primary-glow); pointer-events: none; opacity: 0;
-      transition: all 0.3s;
+    /* Responsive */
+    @media (max-width: 768px) {
+      .sidebar { width: 240px; }
+      .chat-area, .content-area { padding: 16px; }
+      .input-bar { padding: 12px 16px; }
+      .msg-bubble { max-width: 88%; }
     }
-    .live-bot-btn.active ~ .orb-waves, .orb-waves.active {
-      opacity: 1;
-      animation: waveRipple 2s infinite ease-out;
+    @media (max-width: 600px) {
+      .sidebar { position: fixed; left: -270px; z-index: 50; height: 100vh; transition: left 0.3s; }
+      .sidebar.open { left: 0; }
+      .main { width: 100%; }
     }
-    @keyframes waveRipple {
-      0% { transform: scale(1); opacity: 0.8; }
-      100% { transform: scale(1.8); opacity: 0; }
-    }
-
   </style>
 </head>
 <body>
 <div class="app">
 
-  <!-- ── SIDEBAR ── -->
-  <aside class="sidebar">
+  <!-- ══════════════════════════════════════
+       SIDEBAR
+  ══════════════════════════════════════ -->
+  <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <div class="logo-icon">J</div>
       <div>
         <div class="logo-text">Jarvis</div>
-        <div class="logo-sub">AI Copilot</div>
+        <div class="logo-sub">AI COPILOT</div>
       </div>
     </div>
 
-    <div style="padding: 0 12px 10px;">
-      <button class="btn btn-primary" style="width: 100%; justify-content: center; gap: 8px; border-radius: 10px; font-weight: 600; padding: 10px;" onclick="newConversation()">
-        <span>➕</span> New Chat
-      </button>
+    <!-- Agent Selection -->
+    <div class="agent-section">
+      <div class="agent-section-label">Agents</div>
+      <div class="agent-cards">
+        <button class="agent-card active" id="agentChatCard" onclick="selectAgent('chat')">
+          <div class="agent-card-icon">💬</div>
+          <div class="agent-card-info">
+            <div class="agent-card-name">Chat Agent</div>
+            <div class="agent-card-desc">Text + Voice-to-Text</div>
+          </div>
+        </button>
+        <button class="agent-card live-card" id="agentLiveCard" onclick="selectAgent('live')">
+          <div class="agent-card-icon">🎙️</div>
+          <div class="agent-card-info">
+            <div class="agent-card-name">Live Agent</div>
+            <div class="agent-card-desc">Realtime Voice Conversation</div>
+          </div>
+          <div class="agent-live-dot" id="agentLiveDot"></div>
+        </button>
+      </div>
     </div>
 
-    <nav class="nav-menu">
-      <button class="nav-item active" onclick="switchView('chat')"><span>💬</span> Chat Assistant</button>
-      <button class="nav-item" onclick="switchView('live-assistant')"><span>🎙️</span> Assistant Live</button>
-      <button class="nav-item" onclick="switchView('email')"><span>📧</span> Mailbox</button>
-      <button class="nav-item" onclick="switchView('calendar')"><span>📅</span> Calendar</button>
-      <button class="nav-item" onclick="switchView('todo')"><span>☑️</span> Tasks</button>
-    </nav>
+    <!-- Nav Items -->
+    <div class="nav-section">
+      <div class="nav-section-label">Workspace</div>
+      <div class="nav-items">
+        <button class="nav-item" id="nav-email" onclick="switchView('email')">📧 Mailbox</button>
+        <button class="nav-item" id="nav-calendar" onclick="switchView('calendar')">📅 Calendar</button>
+        <button class="nav-item" id="nav-todo" onclick="switchView('todo')">☑️ Tasks</button>
+      </div>
+    </div>
 
+    <!-- Chat History (only visible in Chat Agent mode) -->
     <div class="conv-section" id="convSection">
-      <p class="sidebar-label">Recent Chats</p>
+      <div class="conv-section-header">
+        <div class="conv-section-label">Recent Chats</div>
+        <button class="new-chat-btn" onclick="newConversation()">+ New</button>
+      </div>
       <div class="conv-list" id="convList"></div>
     </div>
 
@@ -386,143 +727,146 @@
           <div class="user-name" id="userName">Loading...</div>
           <div class="user-email" id="userEmail"></div>
         </div>
-        <button class="logout-btn" onclick="logout()" title="Sign out">Sign out</button>
+        <button class="logout-btn" onclick="logout()">Sign out</button>
       </div>
     </div>
   </aside>
 
-  <!-- ── MAIN AREA ── -->
+  <!-- ══════════════════════════════════════
+       MAIN AREA
+  ══════════════════════════════════════ -->
   <main class="main">
-    
-    <!-- TOPBAR -->
+
+    <!-- Topbar -->
     <div class="topbar">
       <div>
-        <div class="topbar-title" id="viewTitle">Chat Assistant</div>
+        <div class="topbar-title" id="viewTitle">Chat Agent</div>
         <div class="topbar-sub" id="viewSub">Jarvis AI Powered</div>
       </div>
       <div class="topbar-actions" id="topbarActions">
-        <button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.8rem;" onclick="newConversation()" id="newChatBtn">New Chat</button>
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.8rem;" onclick="newConversation()">+ New Chat</button>
       </div>
     </div>
 
-    <!-- CHAT VIEW -->
+    <!-- ─── CHAT VIEW ─── -->
     <div id="view-chat" class="view-container active">
       <div class="chat-area" id="chatArea">
-        <div class="empty-state" id="welcomeScreen" style="margin-top: 10vh;">
-          <div class="empty-icon">🤖</div>
-          <h2 style="font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 12px;">How can I help you today?</h2>
-          <p style="max-width: 500px; margin: 0 auto; line-height: 1.6;">I can manage your Microsoft 365 emails, schedule events, and organize your tasks.</p>
+        <div class="welcome-screen" id="welcomeScreen">
+          <div class="welcome-orb">🤖</div>
+          <h1 class="welcome-title">How can I help you today?</h1>
+          <p class="welcome-sub">Manage your Outlook emails, schedule meetings, track tasks — all via voice or text.</p>
+          <div class="welcome-chips">
+            <div class="welcome-chip" onclick="chipPrompt('Read my latest emails')">📧 Read emails</div>
+            <div class="welcome-chip" onclick="chipPrompt('What\'s on my calendar today?')">📅 Today\'s schedule</div>
+            <div class="welcome-chip" onclick="chipPrompt('Show my pending tasks')">☑️ My tasks</div>
+            <div class="welcome-chip" onclick="chipPrompt('Draft a professional email')">✏️ Draft email</div>
+          </div>
         </div>
       </div>
       <div class="input-bar">
-        <div class="input-wrap">
-          <textarea id="messageInput" placeholder="Ask Jarvis anything..." rows="1" onkeydown="handleKey(event)"></textarea>
-          <button class="mic-btn" id="micBtn" title="Voice input">🎤</button>
-          <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+        <div class="input-wrap" id="inputWrap">
+          <textarea id="messageInput" placeholder="Ask Jarvis anything..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+          <button class="mic-btn" id="micBtn" title="Voice to text (click to speak)">🎤</button>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send message">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- LIVE BOT ASSISTANT VIEW -->
+    <!-- ─── LIVE AGENT VIEW ─── -->
     <div id="view-live-assistant" class="view-container">
-      <div class="content-area" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 75vh; text-align: center;">
-        
-        <div class="live-bot-card" style="background: rgba(16, 19, 26, 0.7); border: 1px solid var(--border-light); border-radius: 24px; padding: 40px 30px; width: 100%; max-width: 520px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); backdrop-filter: var(--glass-blur); position: relative; overflow: hidden;">
-          
-          <!-- Status Badge -->
-          <div id="liveStatusBadge" style="display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); padding: 6px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-bottom: 24px;">
-            <span id="liveStatusDot" style="width: 8px; height: 8px; border-radius: 50%; background: var(--muted2);"></span>
-            <span id="liveStatusText">Ready to Connect</span>
-          </div>
+      <div class="live-view" id="liveView" data-state="idle">
 
-          <h2 style="font-size: 1.6rem; font-weight: 700; color: var(--text); margin-bottom: 8px;">Jarvis Assistant Live</h2>
-          <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 36px; line-height: 1.5;">Touch the bot orb below to start real-time speech interaction with Jarvis voice agent.</p>
-
-          <!-- Interactive Bot Touch Button -->
-          <div style="position: relative; width: 160px; height: 160px; margin: 0 auto 36px; display: flex; align-items: center; justify-content: center;">
-            <div id="liveOrbWaves" class="orb-waves"></div>
-            <button id="liveBotBtn" onclick="toggleLiveBot()" class="live-bot-btn" title="Touch to Start Live Bot">
-              <span id="liveBotIcon" style="font-size: 3.2rem;">🤖</span>
-            </button>
-          </div>
-
-          <!-- Action Subtext -->
-          <div id="liveActionText" style="font-weight: 600; font-size: 1rem; color: var(--text); margin-bottom: 20px;">
-            Touch Bot to Start Realtime Voice Agent
-          </div>
-
-          <!-- Live Conversation Logs / Status -->
-          <div id="liveTranscripts" style="background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 12px; padding: 14px; max-height: 140px; overflow-y: auto; text-align: left; font-size: 0.85rem; color: var(--muted); display: none;">
-            <div id="liveLogs"></div>
-          </div>
-
+        <!-- Status chip -->
+        <div class="live-status-chip" id="liveStatusChip">
+          <div class="live-status-dot" id="liveStatusDot"></div>
+          <span id="liveStatusText">Ready to start</span>
         </div>
 
+        <!-- Orb -->
+        <div class="orb-container">
+          <div class="orb-ring"></div>
+          <div class="orb-ring"></div>
+          <div class="orb-ring"></div>
+          <button class="live-orb" id="liveOrb" onclick="handleOrbClick()" title="Start / Stop live conversation">
+            <div class="live-orb-inner" id="liveOrbIcon">🤖</div>
+          </button>
+        </div>
+
+        <!-- Last transcript / response -->
+        <div class="live-transcript" id="liveTranscript">
+          Tap the orb to begin a live voice conversation with Jarvis.
+        </div>
+
+        <!-- End call button -->
+        <button class="live-end-btn" id="liveEndBtn" onclick="disconnectLiveBot()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect width="24" height="24" rx="12"/></svg>
+          End Conversation
+        </button>
+
+        <div class="live-hint" id="liveHint">Powered by LiveKit · Deepgram · Cartesia</div>
       </div>
     </div>
 
-    <!-- EMAIL VIEW -->
+    <!-- ─── EMAIL VIEW ─── -->
     <div id="view-email" class="view-container">
       <div class="content-area">
         <div class="email-tabs">
           <div class="email-tab active" id="tab-inbox" onclick="switchEmailTab('inbox')">Inbox</div>
           <div class="email-tab" id="tab-drafts" onclick="switchEmailTab('drafts')">Drafts</div>
-          <div class="email-tab" id="tab-sentitems" onclick="switchEmailTab('sentitems')">Sent Items</div>
+          <div class="email-tab" id="tab-sentitems" onclick="switchEmailTab('sentitems')">Sent</div>
           <div class="email-tab" id="tab-deleteditems" onclick="switchEmailTab('deleteditems')">Trash</div>
         </div>
-        <div id="emailList" class="list-grid">
-          <!-- Emails injected here -->
-        </div>
+        <div id="emailList" class="list-grid"></div>
       </div>
     </div>
 
-    <!-- CALENDAR VIEW -->
+    <!-- ─── CALENDAR VIEW ─── -->
     <div id="view-calendar" class="view-container">
       <div class="content-area">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
           <div>
-            <h3 style="font-size:1.2rem; font-weight:600;">Upcoming Calendar Events</h3>
-            <p style="font-size:0.8rem; color:var(--muted);">Timezone: Pakistan Standard Time (PKT, UTC+5)</p>
+            <h3 style="font-size:1.1rem;font-weight:700;">Upcoming Events</h3>
+            <p style="font-size:0.78rem;color:var(--muted);margin-top:2px;">Pakistan Standard Time (PKT, UTC+5)</p>
           </div>
-          <button class="btn btn-primary" onclick="openEventModal()">+ Schedule Event</button>
+          <button class="btn btn-primary" onclick="openEventModal()">+ Schedule</button>
         </div>
-        <div id="eventList" class="list-grid">
-          <!-- Events injected here -->
-        </div>
+        <div id="eventList" class="list-grid"></div>
       </div>
     </div>
 
-    <!-- TO-DO TASKS VIEW -->
+    <!-- ─── TO-DO VIEW ─── -->
     <div id="view-todo" class="view-container">
       <div class="content-area">
-        <div class="todo-header">
-          <h3 style="font-size:1.2rem; font-weight:600;">Microsoft To-Do Tasks</h3>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <h3 style="font-size:1.1rem;font-weight:700;">Microsoft To-Do Tasks</h3>
           <button class="btn btn-primary" onclick="openTodoModal()">+ Add Task</button>
         </div>
-        <div id="todoList" class="list-grid">
-          <!-- Tasks injected here -->
-        </div>
+        <div id="todoList" class="list-grid"></div>
       </div>
     </div>
 
   </main>
 </div>
 
-<!-- MODALS -->
+<!-- ══════════════════════════════════════
+     MODALS
+══════════════════════════════════════ -->
 
-<!-- Email Detail Modal -->
+<!-- Email Detail -->
 <div class="modal-overlay" id="emailModal">
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title">Email</div>
       <button class="modal-close" onclick="closeModal('emailModal')">&times;</button>
     </div>
-    <div class="modal-body" id="emailModalBody" style="font-size: 0.9rem; line-height: 1.6; color: var(--text);"></div>
+    <div class="modal-body" id="emailModalBody" style="font-size:0.88rem;line-height:1.65;"></div>
     <div class="modal-footer" id="emailModalFooter"></div>
   </div>
 </div>
 
-<!-- Draft Compose Modal -->
+<!-- Draft Compose -->
 <div class="modal-overlay" id="draftModal">
   <div class="modal">
     <div class="modal-header">
@@ -532,17 +876,17 @@
     <div class="modal-body">
       <div class="form-group">
         <label>To (comma separated)</label>
-        <input type="text" id="draftTo" class="input-field" placeholder="email@example.com" />
+        <input type="text" id="draftTo" class="input-field" placeholder="email@example.com"/>
       </div>
       <div class="form-group" id="draftSubjectGroup">
         <label>Subject</label>
-        <input type="text" id="draftSubject" class="input-field" />
+        <input type="text" id="draftSubject" class="input-field"/>
       </div>
       <div class="form-group">
         <label>Message</label>
         <textarea id="draftBody" class="input-field" rows="6"></textarea>
       </div>
-      <input type="hidden" id="draftReplyId" />
+      <input type="hidden" id="draftReplyId"/>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('draftModal')">Cancel</button>
@@ -551,7 +895,7 @@
   </div>
 </div>
 
-<!-- Calendar Event Modal -->
+<!-- Calendar Event -->
 <div class="modal-overlay" id="eventModal">
   <div class="modal">
     <div class="modal-header">
@@ -561,51 +905,51 @@
     <div class="modal-body">
       <div class="form-group">
         <label>Event Subject</label>
-        <input type="text" id="eventSubject" class="input-field" placeholder="Team Sync / Client Meeting" />
+        <input type="text" id="eventSubject" class="input-field" placeholder="Team Sync / Client Meeting"/>
       </div>
       <div class="form-group">
-        <label>Start Time (PKT Local Time)</label>
-        <input type="datetime-local" id="eventStart" class="input-field" />
+        <label>Start Time (PKT)</label>
+        <input type="datetime-local" id="eventStart" class="input-field"/>
       </div>
       <div class="form-group">
-        <label>End Time (PKT Local Time)</label>
-        <input type="datetime-local" id="eventEnd" class="input-field" />
+        <label>End Time (PKT)</label>
+        <input type="datetime-local" id="eventEnd" class="input-field"/>
       </div>
       <div class="form-group">
         <label>Location</label>
-        <input type="text" id="eventLocation" class="input-field" placeholder="Microsoft Teams / Office" />
+        <input type="text" id="eventLocation" class="input-field" placeholder="Microsoft Teams / Office"/>
       </div>
       <div class="form-group">
-        <label>Description / Notes</label>
+        <label>Description</label>
         <textarea id="eventBody" class="input-field" rows="3"></textarea>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('eventModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="submitEvent()">Create Meeting</button>
+      <button class="btn btn-primary" onclick="submitEvent()">Create Event</button>
     </div>
   </div>
 </div>
 
-<!-- To-Do Task Modal -->
+<!-- To-Do Task -->
 <div class="modal-overlay" id="todoModal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Add To-Do Task</div>
+      <div class="modal-title">Add Task</div>
       <button class="modal-close" onclick="closeModal('todoModal')">&times;</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
         <label>Task Title</label>
-        <input type="text" id="todoTitle" class="input-field" placeholder="Complete quarterly report" />
+        <input type="text" id="todoTitle" class="input-field" placeholder="Complete quarterly report"/>
       </div>
       <div class="form-group">
         <label>Due Date</label>
-        <input type="date" id="todoDueDate" class="input-field" />
+        <input type="date" id="todoDueDate" class="input-field"/>
       </div>
       <div class="form-group">
         <label>Due Time</label>
-        <input type="time" id="todoDueTime" class="input-field" />
+        <input type="time" id="todoDueTime" class="input-field"/>
       </div>
     </div>
     <div class="modal-footer">
@@ -615,225 +959,49 @@
   </div>
 </div>
 
-
-
 <div id="toast"></div>
 
+<!-- ══════════════════════════════════════
+     SCRIPT
+══════════════════════════════════════ -->
 <script>
+  /* ─────────────────────────────────────────
+     STATE
+  ───────────────────────────────────────── */
   let currentConvId = null;
   let isLoading = false;
   let currentView = 'chat';
+  let currentAgent = 'chat'; // 'chat' | 'live'
+  let currentEmailFolder = 'inbox';
 
-  // ── Voice Assistant System (STT & TTS) ──
+  // STT (Chat Agent)
   let recognizer = null;
   let isListening = false;
   let userStoppedManually = false;
+
+  // TTS (Chat Agent)
   let preferredVoice = null;
 
-  function loadVoices() {
-    if (!('speechSynthesis' in window)) return;
-    const voices = window.speechSynthesis.getVoices();
-    if (!voices || voices.length === 0) return;
+  // LiveKit (Live Agent)
+  let liveKitRoom = null;
+  let isLiveBotActive = false;
+  let agentAudioEl = null;       // current agent <audio> element
+  let bargeInAnalyser = null;    // Web Audio analyser for barge-in detection
+  let bargeInSource = null;
+  let bargeInAnimFrame = null;
+  let liveAgentState = 'idle';   // idle | connecting | listening | thinking | speaking | ended
 
-    // Prefer Natural / Google / Enhanced English voices
-    preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Enhanced') || v.name.includes('Samantha') || v.name.includes('Zira')))
-      || voices.find(v => v.lang.startsWith('en'))
-      || voices[0];
-  }
-
-  if ('speechSynthesis' in window) {
-    loadVoices();
-    if (window.speechSynthesis.onvoiceschanged !== undefined) {
-      window.speechSynthesis.onvoiceschanged = loadVoices;
-    }
-  }
-
-  function initSpeechRecognition() {
-    const micBtn = document.getElementById('micBtn');
-    if (!micBtn) return;
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      console.warn('Speech recognition not supported in this browser.');
-      micBtn.title = 'Speech recognition not supported in this browser';
-      return;
-    }
-
-    recognizer = new SpeechRecognition();
-    recognizer.continuous = false;
-    recognizer.interimResults = true;
-    recognizer.lang = 'en-US';
-
-    recognizer.onstart = () => {
-      isListening = true;
-      userStoppedManually = false;
-      micBtn.classList.add('listening');
-      micBtn.setAttribute('title', 'Listening... Click to stop');
-      showListeningBadge(true);
-    };
-
-    recognizer.onresult = (e) => {
-      let interim = '';
-      let final = '';
-
-      for (let i = e.resultIndex; i < e.results.length; ++i) {
-        if (e.results[i].isFinal) {
-          final += e.results[i][0].transcript;
-        } else {
-          interim += e.results[i][0].transcript;
-        }
-      }
-
-      const input = document.getElementById('messageInput');
-      if (input) {
-        if (final) {
-          input.value = final;
-        } else if (interim) {
-          input.value = interim;
-        }
-      }
-
-      if (final) {
-        stopListening();
-        sendMessage();
-      }
-    };
-
-    recognizer.onerror = (e) => {
-      console.error('Speech recognition error:', e.error);
-      isListening = false;
-      micBtn.classList.remove('listening');
-      micBtn.setAttribute('title', 'Voice input');
-      showListeningBadge(false);
-
-      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-        showToast('⚠️ Microphone permission denied. Please allow microphone access.');
-      } else if (e.error === 'no-speech') {
-        if (!userStoppedManually) {
-          showToast('No speech detected. Please try again.');
-        }
-      } else if (e.error !== 'aborted') {
-        showToast(`Speech error: ${e.error}`);
-      }
-    };
-
-    recognizer.onend = () => {
-      isListening = false;
-      micBtn.classList.remove('listening');
-      micBtn.setAttribute('title', 'Voice input');
-      showListeningBadge(false);
-    };
-
-    micBtn.addEventListener('click', toggleListening);
-  }
-
-  function toggleListening() {
-    if (!recognizer) {
-      showToast('Voice recognition is not supported in this browser. Please use Chrome or Edge.');
-      return;
-    }
-
-    if (isListening) {
-      userStoppedManually = true;
-      stopListening();
-    } else {
-      try {
-        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-        recognizer.start();
-      } catch (e) {
-        console.error('Recognizer start error', e);
-      }
-    }
-  }
-
-  function stopListening() {
-    if (recognizer && isListening) {
-      try {
-        recognizer.stop();
-      } catch (e) {}
-    }
-    isListening = false;
-    const micBtn = document.getElementById('micBtn');
-    if (micBtn) {
-      micBtn.classList.remove('listening');
-      micBtn.setAttribute('title', 'Voice input');
-    }
-    showListeningBadge(false);
-  }
-
-  function showListeningBadge(show) {
-    let badge = document.getElementById('listeningBadge');
-    const inputWrap = document.querySelector('.input-wrap');
-    if (!inputWrap) return;
-
-    if (show) {
-      if (!badge) {
-        badge = document.createElement('div');
-        badge.id = 'listeningBadge';
-        badge.className = 'listening-badge';
-        badge.innerHTML = '<span class="dot"></span> Listening...';
-        inputWrap.appendChild(badge);
-      }
-    } else {
-      if (badge) badge.remove();
-    }
-  }
-
-  // Strip code, HTML tags, markdown, and technical jargon before TTS
-  function cleanTextForSpeech(rawText) {
-    if (!rawText) return '';
-    let text = rawText;
-
-    // Remove code blocks
-    text = text.replace(/```[\s\S]*?```/g, ' Code snippet omitted. ');
-    // Remove inline code
-    text = text.replace(/`([^`]+)`/g, '$1');
-    // Remove HTML tags completely
-    text = text.replace(/<[^>]*>/g, ' ');
-    // Convert HTML entities
-    text = text.replace(/&amp;/g, '&')
-               .replace(/&lt;/g, '<')
-               .replace(/&gt;/g, '>')
-               .replace(/&quot;/g, '"')
-               .replace(/&#39;/g, "'");
-    // Remove markdown headers, links, formatting
-    text = text.replace(/^#+\s+/gm, '')
-               .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-               .replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g, '$1')
-               .replace(/^[\s*-+>]+\s+/gm, '');
-    // Remove excess whitespace
-    return text.replace(/\s+/g, ' ').trim();
-  }
-
-  function speak(text, avatarEl = null) {
-    if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-
-    const cleanText = cleanTextForSpeech(text);
-    if (!cleanText) return;
-
-    const utter = new SpeechSynthesisUtterance(cleanText);
-    if (preferredVoice) {
-      utter.voice = preferredVoice;
-    }
-    utter.lang = 'en-US';
-    utter.rate = 0.98;
-    utter.pitch = 1.0;
-
-    if (avatarEl) {
-      avatarEl.classList.add('speaking');
-      utter.onend = () => avatarEl.classList.remove('speaking');
-      utter.onerror = () => avatarEl.classList.remove('speaking');
-    }
-
-    window.speechSynthesis.speak(utter);
-  }
-
+  /* ─────────────────────────────────────────
+     INIT
+  ───────────────────────────────────────── */
   async function init() {
     await loadUser();
     await loadConversations();
     initSpeechRecognition();
+    loadVoices();
+    if (window.speechSynthesis && window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
   }
 
   async function loadUser() {
@@ -846,8 +1014,8 @@
       document.getElementById('userName').textContent = u.name || 'User';
       document.getElementById('userEmail').textContent = u.email || '';
       document.getElementById('userAvatar').textContent = (u.name || u.email || '?')[0].toUpperCase();
-      
-      // Auto-refresh active view every 30s so new incoming emails/events show in real-time
+
+      // 30s auto-refresh for live workspace views
       setInterval(() => {
         if (currentView === 'email') loadEmails(currentEmailFolder);
         else if (currentView === 'calendar') loadEvents();
@@ -856,468 +1024,470 @@
     } catch(e) { window.location.href = '/login.html'; }
   }
 
-  let currentEmailFolder = 'inbox';
+  /* ─────────────────────────────────────────
+     AGENT SELECTION
+  ───────────────────────────────────────── */
+  function selectAgent(agent) {
+    currentAgent = agent;
 
-  // ── UI Navigation ──
+    document.getElementById('agentChatCard').classList.toggle('active', agent === 'chat');
+    document.getElementById('agentLiveCard').classList.toggle('active', agent === 'live');
+
+    // Show/hide chat history section
+    document.getElementById('convSection').classList.toggle('hidden', agent !== 'chat');
+
+    if (agent === 'chat') {
+      switchView('chat');
+    } else {
+      switchView('live-assistant');
+    }
+  }
+
+  /* ─────────────────────────────────────────
+     VIEW NAVIGATION
+  ───────────────────────────────────────── */
   function switchView(view) {
     currentView = view;
-    document.querySelectorAll('.nav-item').forEach(el => {
-      if (el.getAttribute('onclick') && el.getAttribute('onclick').includes(`'${view}'`)) {
-        el.classList.add('active');
-      } else {
-        el.classList.remove('active');
-      }
-    });
-    
+
+    // Update nav items highlight (workspace only)
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    const navEl = document.getElementById('nav-' + view);
+    if (navEl) navEl.classList.add('active');
+
+    // Switch visible view
     document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
-    const targetView = document.getElementById('view-' + view);
-    if (targetView) targetView.classList.add('active');
+    const target = document.getElementById('view-' + view);
+    if (target) target.classList.add('active');
 
-    const titles = { chat: 'Chat Assistant', 'live-assistant': 'Assistant Live', email: 'Mailbox', calendar: 'Calendar', todo: 'To-Do Tasks' };
-    const viewTitle = document.getElementById('viewTitle');
-    if (viewTitle) viewTitle.textContent = titles[view] || 'Chat Assistant';
-    
+    // Topbar
+    const titles = {
+      'chat': 'Chat Agent',
+      'live-assistant': 'Live Agent',
+      'email': 'Mailbox',
+      'calendar': 'Calendar',
+      'todo': 'Tasks'
+    };
+    const subs = {
+      'chat': 'Text & Voice-to-Text',
+      'live-assistant': 'Realtime Voice Conversation',
+      'email': 'Microsoft Outlook',
+      'calendar': 'Pakistan Standard Time',
+      'todo': 'Microsoft To-Do'
+    };
+    document.getElementById('viewTitle').textContent = titles[view] || 'Jarvis';
+    document.getElementById('viewSub').textContent = subs[view] || '';
+
     const actions = document.getElementById('topbarActions');
-    if (actions) {
-      actions.innerHTML = '';
-      if (view === 'chat') {
-        actions.innerHTML = '<button class="btn btn-outline" style="padding:6px 12px;font-size:0.8rem;" onclick="newConversation()">+ New Chat</button>';
-      } else if (view === 'live-assistant') {
-        actions.innerHTML = '<button class="btn btn-primary" style="padding:6px 12px;font-size:0.8rem;" onclick="toggleLiveBot()">⚡ Start Assistant Live</button>';
-      } else if (view === 'email') {
-        actions.innerHTML = '<button class="btn btn-outline" style="padding:6px 12px;font-size:0.8rem;" onclick="loadEmails()">🔄 Refresh</button><button class="btn btn-primary" style="padding:6px 12px;font-size:0.8rem;" onclick="openDraftModal()">+ New Draft</button>';
-        loadEmails(currentEmailFolder);
-      } else if (view === 'calendar') {
-        actions.innerHTML = '<button class="btn btn-primary" style="padding:6px 12px;font-size:0.8rem;" onclick="openEventModal()">+ Schedule Event</button>';
-        loadEvents();
-      } else if (view === 'todo') {
-        actions.innerHTML = '<button class="btn btn-primary" style="padding:6px 12px;font-size:0.8rem;" onclick="openTodoModal()">+ Add Task</button>';
-        loadTodos();
-      }
+    actions.innerHTML = '';
+    if (view === 'chat') {
+      actions.innerHTML = '<button class="btn btn-outline" style="padding:6px 12px;font-size:0.8rem;" onclick="newConversation()">+ New Chat</button>';
+    } else if (view === 'email') {
+      actions.innerHTML = '<button class="btn btn-outline" style="padding:6px 12px;font-size:0.8rem;" onclick="loadEmails()">↻ Refresh</button><button class="btn btn-primary" style="padding:6px 12px;font-size:0.8rem;" onclick="openDraftModal()">+ Draft</button>';
+      loadEmails(currentEmailFolder);
+    } else if (view === 'calendar') {
+      actions.innerHTML = '<button class="btn btn-primary" style="padding:6px 12px;font-size:0.8rem;" onclick="openEventModal()">+ Event</button>';
+      loadEvents();
+    } else if (view === 'todo') {
+      actions.innerHTML = '<button class="btn btn-primary" style="padding:6px 12px;font-size:0.8rem;" onclick="openTodoModal()">+ Task</button>';
+      loadTodos();
     }
   }
 
-  // ── Emails ──
-  function switchEmailTab(folder) {
-    currentEmailFolder = folder;
-    document.querySelectorAll('.email-tab').forEach(t => t.classList.remove('active'));
-    const activeTab = document.getElementById('tab-' + folder);
-    if(activeTab) activeTab.classList.add('active');
-    loadEmails(folder);
+  /* ─────────────────────────────────────────
+     SPEECH TO TEXT (Chat Agent)
+     KEY CHANGE: does NOT auto-send. Only fills input.
+  ───────────────────────────────────────── */
+  function loadVoices() {
+    if (!('speechSynthesis' in window)) return;
+    const voices = window.speechSynthesis.getVoices();
+    if (!voices || !voices.length) return;
+    preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Enhanced') || v.name.includes('Samantha') || v.name.includes('Zira')))
+      || voices.find(v => v.lang.startsWith('en'))
+      || voices[0];
   }
 
-  async function loadEmails(folder = currentEmailFolder) {
-    const list = document.getElementById('emailList');
-    list.innerHTML = '<div class="loading-spinner"></div>';
-    try {
-      const r = await fetch(`/api/emails?folder=${folder}&top=20`);
-      if(!r.ok) throw new Error();
-      const data = await r.json();
-      list.innerHTML = '';
-      if(!data.value || data.value.length === 0) {
-        list.innerHTML = `<div class="empty-state">No emails found in ${folder}</div>`;
-        return;
-      }
-      data.value.forEach(msg => {
-        const div = document.createElement('div');
-        div.className = 'card email-item';
-        const date = new Date(msg.receivedDateTime || msg.createdDateTime).toLocaleDateString(undefined, {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
-        div.innerHTML = `
-          <div class="email-header">
-            <div class="email-sender">${escHtml(msg.from?.emailAddress?.name || msg.from?.emailAddress?.address || 'Unknown')}</div>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <div class="email-date">${date}</div>
-              <button class="conv-action-btn delete" title="Delete Email" onclick="deleteEmail(event, '${msg.id}')">🗑️</button>
-            </div>
-          </div>
-          <div class="email-subject">${escHtml(msg.subject || '(No Subject)')}</div>
-          <div class="email-snippet">${escHtml(msg.bodyPreview || '')}</div>
-        `;
-        div.onclick = () => openEmailModal(msg);
-        list.appendChild(div);
-      });
-    } catch(e) {
-      list.innerHTML = '<div class="empty-state">Failed to load emails</div>';
-    }
-  }
-
-  async function deleteEmail(event, messageId) {
-    if (event) event.stopPropagation();
-    if (!confirm('Delete this email from Microsoft Outlook?')) return;
-    try {
-      const r = await fetch(`/api/emails/${messageId}`, { method: 'DELETE' });
-      if (r.ok) {
-        showToast('Email deleted successfully');
-        loadEmails(currentEmailFolder);
-      } else { showToast('Failed to delete email'); }
-    } catch(e) { showToast('Error deleting email'); }
-  }
-
-  function openEmailModal(msg) {
-    document.getElementById('emailModalBody').innerHTML = `
-      <div style="margin-bottom: 12px; font-weight:600;">From: ${escHtml(msg.from?.emailAddress?.name || '')} &lt;${escHtml(msg.from?.emailAddress?.address || '')}&gt;</div>
-      <div style="margin-bottom: 12px; font-weight:600;">Subject: ${escHtml(msg.subject || '')}</div>
-      <hr style="border:none; border-top:1px solid var(--border); margin: 12px 0;"/>
-      <div style="white-space: pre-wrap;">${escHtml(msg.body?.content || msg.bodyPreview || '')}</div>
-    `;
-    document.getElementById('emailModalFooter').innerHTML = `
-      <button class="btn btn-danger" onclick="closeModal('emailModal'); deleteEmail(null, '${msg.id}')">Delete</button>
-      <button class="btn btn-outline" onclick="closeModal('emailModal')">Close</button>
-      <button class="btn btn-primary" onclick="closeModal('emailModal'); openDraftReply('${msg.id}', '${escHtml(msg.from?.emailAddress?.address || '')}', 'Re: ${escHtml(msg.subject || '')}')">Reply</button>
-      <button class="btn btn-primary" style="background:var(--accent);" onclick="closeModal('emailModal'); summarizeEmail('${msg.id}')">Summarize with AI</button>
-    `;
-    document.getElementById('emailModal').classList.add('active');
-  }
-
-  function openDraftModal() {
-    document.getElementById('draftModalTitle').textContent = 'Compose Draft';
-    document.getElementById('draftTo').value = '';
-    document.getElementById('draftSubject').value = '';
-    document.getElementById('draftBody').value = '';
-    document.getElementById('draftReplyId').value = '';
-    document.getElementById('draftSubjectGroup').style.display = 'block';
-    document.getElementById('draftModal').classList.add('active');
-  }
-
-  function openDraftReply(replyId, to, subject) {
-    document.getElementById('draftModalTitle').textContent = 'Reply to Email';
-    document.getElementById('draftTo').value = to;
-    document.getElementById('draftSubject').value = subject;
-    document.getElementById('draftBody').value = '';
-    document.getElementById('draftReplyId').value = replyId;
-    document.getElementById('draftSubjectGroup').style.display = 'none';
-    document.getElementById('draftModal').classList.add('active');
-  }
-
-  async function submitDraft() {
-    const replyId = document.getElementById('draftReplyId').value;
-    const to = document.getElementById('draftTo').value.split(',').map(s=>s.trim()).filter(Boolean);
-    const subject = document.getElementById('draftSubject').value;
-    const body = document.getElementById('draftBody').value;
-
-    try {
-      let r;
-      if (replyId) {
-        r = await fetch(`/api/emails/${replyId}/reply-draft`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ comment: body })
-        });
-      } else {
-        r = await fetch('/api/emails/draft', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ to_recipients: to, subject, body_content: body })
-        });
-      }
-      if(r.ok) {
-        closeModal('draftModal');
-        showToast('Draft created successfully!');
-        if (currentEmailFolder === 'drafts') loadEmails('drafts');
-      } else { showToast('Failed to create draft'); }
-    } catch(e) { showToast('Error creating draft'); }
-  }
-
-  function summarizeEmail(id) {
-    switchView('chat');
-    document.getElementById('messageInput').value = `Summarize the email with ID: ${id}`;
-    sendMessage();
-  }
-
-  // ── Calendar Events ──
-  async function loadEvents() {
-    const list = document.getElementById('eventList');
-    list.innerHTML = '<div class="loading-spinner"></div>';
-    try {
-      const r = await fetch('/api/events?top=15');
-      if(!r.ok) throw new Error();
-      const data = await r.json();
-      list.innerHTML = '';
-      if(!data.value || data.value.length === 0) {
-        list.innerHTML = '<div class="empty-state">No upcoming calendar events</div>';
-        return;
-      }
-      data.value.forEach(evt => {
-        const div = document.createElement('div');
-        div.className = 'card event-item';
-        const startDt = new Date(evt.start.dateTime + 'Z').toLocaleString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
-        div.innerHTML = `
-          <div class="event-time">
-            <div class="event-time-start">${startDt}</div>
-            <div class="event-time-date">PKT Time</div>
-          </div>
-          <div class="event-details">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <div class="event-title">${escHtml(evt.subject || '(No Title)')}</div>
-              <button class="conv-action-btn delete" title="Delete Event" onclick="deleteEvent('${evt.id}')">🗑️</button>
-            </div>
-            ${evt.location?.displayName ? `<div class="event-loc">📍 ${escHtml(evt.location.displayName)}</div>` : ''}
-          </div>
-        `;
-        list.appendChild(div);
-      });
-    } catch(e) {
-      list.innerHTML = '<div class="empty-state">Failed to load calendar events</div>';
-    }
-  }
-
-  function openEventModal() {
-    document.getElementById('eventSubject').value = '';
-    document.getElementById('eventStart').value = '';
-    document.getElementById('eventEnd').value = '';
-    document.getElementById('eventLocation').value = '';
-    document.getElementById('eventBody').value = '';
-    document.getElementById('eventModal').classList.add('active');
-  }
-
-  async function submitEvent() {
-    const subject = document.getElementById('eventSubject').value;
-    const startVal = document.getElementById('eventStart').value;
-    const endVal = document.getElementById('eventEnd').value;
-    const location = document.getElementById('eventLocation').value;
-    const body = document.getElementById('eventBody').value;
-
-    if (!subject || !startVal || !endVal) {
-      showToast('Please fill subject, start time, and end time.');
+  function initSpeechRecognition() {
+    const micBtn = document.getElementById('micBtn');
+    if (!micBtn) return;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      micBtn.title = 'Speech recognition not supported in this browser';
       return;
     }
+    recognizer = new SpeechRecognition();
+    recognizer.continuous = false;
+    recognizer.interimResults = true;
+    recognizer.lang = 'en-US';
 
-    try {
-      const r = await fetch('/api/events', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          subject,
-          start_datetime: new Date(startVal).toISOString(),
-          end_datetime: new Date(endVal).toISOString(),
-          timezone: 'Pakistan Standard Time',
-          location,
-          body
-        })
-      });
-      if(r.ok) {
-        closeModal('eventModal');
-        showToast('Calendar event created!');
-        loadEvents();
-      } else { showToast('Failed to create event'); }
-    } catch(e) { showToast('Error creating event'); }
+    recognizer.onstart = () => {
+      isListening = true;
+      userStoppedManually = false;
+      micBtn.classList.add('listening');
+      micBtn.title = 'Listening... click to stop';
+      showSTTBadge(true);
+    };
+
+    recognizer.onresult = (e) => {
+      let interim = '', final = '';
+      for (let i = e.resultIndex; i < e.results.length; ++i) {
+        if (e.results[i].isFinal) final += e.results[i][0].transcript;
+        else interim += e.results[i][0].transcript;
+      }
+      const input = document.getElementById('messageInput');
+      if (input) {
+        // Show live transcript as user speaks
+        input.value = final || interim;
+        autoResize(input);
+      }
+      // ✅ FIXED: NO auto-send. Just stop listening after final.
+      // User reviews the text and manually presses Send.
+      if (final) {
+        stopListening();
+        // Focus input so user can edit or press Enter
+        if (input) input.focus();
+      }
+    };
+
+    recognizer.onerror = (e) => {
+      isListening = false;
+      micBtn.classList.remove('listening');
+      micBtn.title = 'Voice to text';
+      showSTTBadge(false);
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        showToast('⚠️ Microphone permission denied.');
+      } else if (e.error === 'no-speech' && !userStoppedManually) {
+        showToast('No speech detected. Try again.');
+      } else if (e.error !== 'aborted') {
+        showToast(`Speech error: ${e.error}`);
+      }
+    };
+
+    recognizer.onend = () => {
+      isListening = false;
+      micBtn.classList.remove('listening');
+      micBtn.title = 'Voice to text';
+      showSTTBadge(false);
+    };
+
+    micBtn.addEventListener('click', toggleListening);
   }
 
-  async function deleteEvent(eventId) {
-    if(!confirm('Delete this event from your calendar?')) return;
-    try {
-      const r = await fetch(`/api/events/${eventId}`, { method: 'DELETE' });
-      if(r.ok) {
-        showToast('Event deleted');
-        loadEvents();
-      } else { showToast('Failed to delete event'); }
-    } catch(e) { showToast('Error deleting event'); }
+  function toggleListening() {
+    if (!recognizer) {
+      showToast('Voice recognition requires Chrome or Edge.');
+      return;
+    }
+    if (isListening) {
+      userStoppedManually = true;
+      stopListening();
+    } else {
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      try { recognizer.start(); } catch(e) { console.error(e); }
+    }
   }
 
-  // ── To-Do Tasks ──
-  async function loadTodos() {
-    const list = document.getElementById('todoList');
-    list.innerHTML = '<div class="loading-spinner"></div>';
+  function stopListening() {
+    if (recognizer && isListening) {
+      try { recognizer.stop(); } catch(e) {}
+    }
+    isListening = false;
+    const micBtn = document.getElementById('micBtn');
+    if (micBtn) { micBtn.classList.remove('listening'); micBtn.title = 'Voice to text'; }
+    showSTTBadge(false);
+  }
+
+  function showSTTBadge(show) {
+    let badge = document.getElementById('sttBadge');
+    const wrap = document.getElementById('inputWrap');
+    if (!wrap) return;
+    if (show) {
+      if (!badge) {
+        badge = document.createElement('div');
+        badge.id = 'sttBadge';
+        badge.className = 'stt-badge';
+        badge.innerHTML = '<div class="stt-dot"></div> Listening — speak now...';
+        wrap.appendChild(badge);
+      }
+    } else {
+      if (badge) badge.remove();
+    }
+  }
+
+  /* ─────────────────────────────────────────
+     TTS (Chat Agent)
+  ───────────────────────────────────────── */
+  function cleanForSpeech(raw) {
+    if (!raw) return '';
+    let t = raw;
+    t = t.replace(/```[\s\S]*?```/g, ' Code block omitted. ');
+    t = t.replace(/`([^`]+)`/g, '$1');
+    t = t.replace(/<[^>]*>/g, ' ');
+    t = t.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"');
+    t = t.replace(/^#+\s+/gm,'').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g,'$1').replace(/^[\s*\->]+/gm,'');
+    return t.replace(/\s+/g,' ').trim();
+  }
+
+  function speak(text, avatarEl = null) {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const cleanText = cleanForSpeech(text);
+    if (!cleanText) return;
+    const utter = new SpeechSynthesisUtterance(cleanText);
+    if (preferredVoice) utter.voice = preferredVoice;
+    utter.lang = 'en-US'; utter.rate = 0.97; utter.pitch = 1.0;
+    if (avatarEl) {
+      avatarEl.classList.add('speaking');
+      utter.onend = () => avatarEl.classList.remove('speaking');
+      utter.onerror = () => avatarEl.classList.remove('speaking');
+    }
+    window.speechSynthesis.speak(utter);
+  }
+
+  /* ─────────────────────────────────────────
+     LIVE AGENT STATE MACHINE
+  ───────────────────────────────────────── */
+  const LIVE_STATE_CONFIG = {
+    idle:       { text: 'Ready to start',    icon: '🤖', hint: 'Tap the orb to begin' },
+    connecting: { text: 'Connecting...',     icon: '⚡', hint: 'Setting up live connection...' },
+    listening:  { text: 'Listening...',      icon: '🎤', hint: 'Speak naturally — Jarvis is listening' },
+    thinking:   { text: 'Thinking...',       icon: '💭', hint: 'Processing your request...' },
+    speaking:   { text: 'Speaking...',       icon: '🔊', hint: 'Tap orb or speak to interrupt' },
+    ended:      { text: 'Call ended',        icon: '🤖', hint: 'Tap the orb to start a new session' },
+  };
+
+  function setLiveState(state) {
+    liveAgentState = state;
+    const liveView = document.getElementById('liveView');
+    const statusText = document.getElementById('liveStatusText');
+    const orbIcon = document.getElementById('liveOrbIcon');
+    const endBtn = document.getElementById('liveEndBtn');
+    const liveDot = document.getElementById('agentLiveDot');
+    const hintEl = document.getElementById('liveHint');
+
+    if (liveView) liveView.setAttribute('data-state', state);
+
+    const cfg = LIVE_STATE_CONFIG[state] || LIVE_STATE_CONFIG.idle;
+    if (statusText) statusText.textContent = cfg.text;
+    if (orbIcon) orbIcon.textContent = cfg.icon;
+    if (hintEl) hintEl.textContent = cfg.hint;
+
+    const isActive = ['connecting','listening','thinking','speaking'].includes(state);
+    if (endBtn) endBtn.classList.toggle('visible', isActive);
+    if (liveDot) liveDot.classList.toggle('visible', isActive);
+  }
+
+  function setLiveTranscript(text) {
+    const el = document.getElementById('liveTranscript');
+    if (!el) return;
+    el.textContent = text;
+    el.classList.toggle('has-text', !!text);
+  }
+
+  /* ─────────────────────────────────────────
+     LIVE AGENT — CONNECT / DISCONNECT
+  ───────────────────────────────────────── */
+  function handleOrbClick() {
+    if (isLiveBotActive) {
+      disconnectLiveBot();
+    } else if (liveAgentState === 'idle' || liveAgentState === 'ended') {
+      connectLiveBot();
+    }
+  }
+
+  async function connectLiveBot() {
     try {
-      const r = await fetch('/api/todos');
-      if(!r.ok) throw new Error();
+      setLiveState('connecting');
+      setLiveTranscript('Connecting to Jarvis voice agent...');
+
+      const r = await fetch('/api/livekit/token?room=jarvis-room');
+      if (!r.ok) {
+        const err = await r.json();
+        throw new Error(err.detail || 'Failed to get LiveKit token');
+      }
       const data = await r.json();
-      list.innerHTML = '';
-      if(!data.value || data.value.length === 0) {
-        list.innerHTML = '<div class="empty-state">No To-Do tasks found</div>';
-        return;
+
+      if (typeof LivekitClient === 'undefined') {
+        throw new Error('LiveKit SDK loading. Please retry in a moment.');
       }
-      data.value.forEach(task => {
-        const div = document.createElement('div');
-        div.className = 'todo-item';
-        const isComp = task.status === 'completed';
-        const dueVal = task.dueDateTime?.dateTime ? task.dueDateTime.dateTime.slice(0,10) : '';
-        div.innerHTML = `
-          <div class="todo-checkbox ${isComp ? 'completed' : ''}" onclick="toggleTodo('${task.id}', '${task.status}')"></div>
-          <div class="todo-content">
-            <div class="todo-title ${isComp ? 'completed' : ''}">${escHtml(task.title || 'Untitled Task')}</div>
-            ${dueVal ? `<div class="todo-meta">📅 Due: ${dueVal}</div>` : ''}
-          </div>
-          <div class="todo-actions">
-            <button class="conv-action-btn delete" title="Delete Task" onclick="deleteTodo('${task.id}')">🗑️</button>
-          </div>
-        `;
-        list.appendChild(div);
+
+      liveKitRoom = new LivekitClient.Room({ adaptiveStream: true, dynacast: true });
+
+      // ── Agent speaking: audio track subscribed ──
+      liveKitRoom.on(LivekitClient.RoomEvent.TrackSubscribed, (track, publication, participant) => {
+        if (track.kind === LivekitClient.Track.Kind.Audio) {
+          // Remove previous agent audio element
+          if (agentAudioEl) { try { agentAudioEl.pause(); agentAudioEl.remove(); } catch(e){} }
+          agentAudioEl = track.attach();
+          agentAudioEl.autoplay = true;
+          document.body.appendChild(agentAudioEl);
+          agentAudioEl.play().catch(() => {});
+
+          setLiveState('speaking');
+          setLiveTranscript('Jarvis is speaking...');
+
+          // Start barge-in monitoring
+          startBargeInMonitor();
+
+          agentAudioEl.addEventListener('ended', () => {
+            stopBargeInMonitor();
+            if (isLiveBotActive) {
+              setLiveState('listening');
+              setLiveTranscript('Your turn — speak now.');
+            }
+          }, { once: true });
+        }
       });
+
+      // ── Agent audio track unsubscribed ──
+      liveKitRoom.on(LivekitClient.RoomEvent.TrackUnsubscribed, (track) => {
+        if (track.kind === LivekitClient.Track.Kind.Audio) {
+          stopBargeInMonitor();
+          if (isLiveBotActive) {
+            setLiveState('listening');
+            setLiveTranscript('Your turn — speak now.');
+          }
+        }
+      });
+
+      // ── Local mic published ──
+      liveKitRoom.on(LivekitClient.RoomEvent.LocalTrackPublished, (pub) => {
+        if (pub.kind === LivekitClient.Track.Kind.Audio) {
+          setLiveState('listening');
+          setLiveTranscript('Jarvis is listening. Speak naturally.');
+        }
+      });
+
+      // ── Data received (transcript signals) ──
+      liveKitRoom.on(LivekitClient.RoomEvent.DataReceived, (payload, participant) => {
+        try {
+          const msg = JSON.parse(new TextDecoder().decode(payload));
+          if (msg.type === 'transcript' && msg.text) {
+            setLiveTranscript(msg.text);
+            if (msg.role === 'agent') setLiveState('speaking');
+            else if (msg.role === 'user') setLiveState('thinking');
+          }
+        } catch(e) {}
+      });
+
+      // ── Participant connected ──
+      liveKitRoom.on(LivekitClient.RoomEvent.ParticipantConnected, (p) => {
+        if (p.identity !== liveKitRoom.localParticipant?.identity) {
+          setLiveState('listening');
+          setLiveTranscript('Connected! Say hello to Jarvis.');
+        }
+      });
+
+      // ── Disconnected ──
+      liveKitRoom.on(LivekitClient.RoomEvent.Disconnected, () => {
+        cleanupLiveBotUI();
+      });
+
+      await liveKitRoom.connect(data.ws_url, data.token);
+
+      // Enable mic with noise cancellation
+      await liveKitRoom.localParticipant.setMicrophoneEnabled(true, {
+        echoCancellation: { exact: true },
+        noiseSuppression: { exact: true },
+        autoGainControl: { exact: true },
+        channelCount: 1,
+        sampleRate: 48000,
+      });
+
+      isLiveBotActive = true;
+      setLiveState('listening');
+      setLiveTranscript('Connected! Speak naturally to Jarvis.');
+      showToast('⚡ Live Agent connected!');
+
     } catch(e) {
-      list.innerHTML = '<div class="empty-state">Failed to load To-Do tasks</div>';
+      console.error('LiveBot error:', e);
+      cleanupLiveBotUI();
+      showToast(`⚠️ ${e.message}`);
     }
   }
 
-  function openTodoModal() {
-    document.getElementById('todoTitle').value = '';
-    document.getElementById('todoDueDate').value = '';
-    document.getElementById('todoDueTime').value = '';
-    document.getElementById('todoModal').classList.add('active');
+  async function disconnectLiveBot() {
+    stopBargeInMonitor();
+    if (agentAudioEl) {
+      try { agentAudioEl.pause(); agentAudioEl.remove(); } catch(e) {}
+      agentAudioEl = null;
+    }
+    if (liveKitRoom) {
+      try { await liveKitRoom.disconnect(); } catch(e) {}
+    }
+    cleanupLiveBotUI();
+    showToast('Live conversation ended.');
   }
 
-  async function submitTodo() {
-    const title = document.getElementById('todoTitle').value;
-    const due_date = document.getElementById('todoDueDate').value;
-    const due_time = document.getElementById('todoDueTime').value;
+  function cleanupLiveBotUI() {
+    isLiveBotActive = false;
+    liveKitRoom = null;
+    stopBargeInMonitor();
+    setLiveState('ended');
+    setLiveTranscript('Conversation ended. Tap the orb to start again.');
+    document.getElementById('agentLiveDot').classList.remove('visible');
+  }
 
-    if(!title || !title.trim()) { showToast('Please enter a task title'); return; }
-
+  /* ─────────────────────────────────────────
+     BARGE-IN (Interruption) via Web Audio API
+     When user speaks while agent is speaking:
+     detect mic energy → stop agent audio → switch to listening
+  ───────────────────────────────────────── */
+  async function startBargeInMonitor() {
+    stopBargeInMonitor();
+    if (!isLiveBotActive) return;
     try {
-      const r = await fetch('/api/todos', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ list_id: 'default', title: title.trim(), due_date, due_time })
-      });
-      if(r.ok) {
-        closeModal('todoModal');
-        showToast('Task created successfully!');
-        loadTodos();
-      } else { showToast('Failed to create task'); }
-    } catch(e) { showToast('Error creating task'); }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      bargeInSource = audioCtx.createMediaStreamSource(stream);
+      bargeInAnalyser = audioCtx.createAnalyser();
+      bargeInAnalyser.fftSize = 256;
+      bargeInSource.connect(bargeInAnalyser);
+      const buf = new Uint8Array(bargeInAnalyser.frequencyBinCount);
+
+      const check = () => {
+        if (!bargeInAnalyser || liveAgentState !== 'speaking') return;
+        bargeInAnalyser.getByteFrequencyData(buf);
+        const avg = buf.reduce((a,b) => a+b, 0) / buf.length;
+        if (avg > 22) {
+          // User is speaking — interrupt agent audio
+          if (agentAudioEl) {
+            try { agentAudioEl.pause(); } catch(e) {}
+          }
+          stopBargeInMonitor();
+          setLiveState('listening');
+          setLiveTranscript('Got it — listening to you...');
+          stream.getTracks().forEach(t => t.stop());
+          return;
+        }
+        bargeInAnimFrame = requestAnimationFrame(check);
+      };
+      bargeInAnimFrame = requestAnimationFrame(check);
+    } catch(e) {
+      // Mic not available for barge-in monitoring — ignore
+    }
   }
 
-  async function toggleTodo(taskId, currentStatus) {
-    const newStatus = currentStatus === 'completed' ? 'notStarted' : 'completed';
-    try {
-      const r = await fetch(`/api/todos/${taskId}`, {
-        method: 'PATCH',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ status: newStatus })
-      });
-      if(r.ok) {
-        showToast(newStatus === 'completed' ? 'Task marked completed!' : 'Task re-opened');
-        loadTodos();
-      }
-    } catch(e) {}
+  function stopBargeInMonitor() {
+    if (bargeInAnimFrame) { cancelAnimationFrame(bargeInAnimFrame); bargeInAnimFrame = null; }
+    if (bargeInAnalyser) { try { bargeInAnalyser.disconnect(); } catch(e) {} bargeInAnalyser = null; }
+    if (bargeInSource) { try { bargeInSource.disconnect(); } catch(e) {} bargeInSource = null; }
   }
 
-  async function deleteTodo(taskId) {
-    if(!confirm('Delete this task?')) return;
-    try {
-      const r = await fetch(`/api/todos/${taskId}`, { method: 'DELETE' });
-      if(r.ok) {
-        showToast('Task deleted');
-        loadTodos();
-      } else { showToast('Failed to delete task'); }
-    } catch(e) { showToast('Error deleting task'); }
-  }
-
-
-
-  // ── Utils ──
-  function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-  function showToast(msg) {
-    const t = document.getElementById('toast');
-    if (!t) return;
-    t.textContent = msg; t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 3000);
-  }
-
-  function escHtml(str) {
-    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-  
-  // ── Chat API ──
-  async function loadConversations() {
-    try {
-      const r = await fetch('/api/conversations');
-      if (!r.ok) return;
-      const convs = await r.json();
-      const list = document.getElementById('convList');
-      if (!list) return;
-      list.innerHTML = '';
-      convs.forEach(c => {
-        const item = document.createElement('div');
-        item.className = 'conv-item' + (c.id === currentConvId ? ' active' : '');
-        const safeTitle = escHtml(c.title || 'Conversation');
-        item.innerHTML = `
-          <div class="conv-title-wrap"><span>💬</span><span class="conv-title-text">${safeTitle}</span></div>
-          <div class="conv-actions">
-            <button class="conv-action-btn" title="Rename" onclick="event.stopPropagation(); renameConversation('${c.id}', '${safeTitle.replace(/'/g, "\\'")}')">✏️</button>
-            <button class="conv-action-btn delete" title="Delete" onclick="event.stopPropagation(); deleteConversation('${c.id}')">🗑️</button>
-          </div>
-        `;
-        item.onclick = () => loadConversation(c.id, c.title);
-        list.appendChild(item);
-      });
-    } catch(e) {}
-  }
-
-  async function renameConversation(id, oldTitle) {
-    const newTitle = prompt('Enter new title for conversation:', oldTitle);
-    if (!newTitle || !newTitle.trim() || newTitle.trim() === oldTitle) return;
-    try {
-      const r = await fetch(`/api/conversations/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newTitle.trim() })
-      });
-      if (r.ok) {
-        if (currentConvId === id) document.getElementById('viewTitle').textContent = newTitle.trim();
-        await loadConversations();
-        showToast('Conversation renamed');
-      }
-    } catch(e) { showToast('Error renaming conversation'); }
-  }
-
-  async function deleteConversation(id) {
-    if (!confirm('Delete this conversation?')) return;
-    try {
-      const r = await fetch(`/api/conversations/${id}`, { method: 'DELETE' });
-      if (r.ok) {
-        if (currentConvId === id) newConversation();
-        await loadConversations();
-        showToast('Conversation deleted');
-      }
-    } catch(e) { showToast('Error deleting conversation'); }
-  }
-
-  async function loadConversation(id, title) {
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-    currentConvId = id;
-    document.getElementById('viewTitle').textContent = title || 'Conversation';
-    document.getElementById('chatArea').innerHTML = '';
-    
-    if(currentView !== 'chat') switchView('chat');
-
-    try {
-      const r = await fetch(`/api/conversations/${id}/messages`);
-      const msgs = await r.json();
-      msgs.forEach(m => appendMessage(m.role === 'user' ? 'user' : 'assistant', m.content, null, false, false));
-    } catch(e) {}
-
-    await loadConversations();
-    scrollToBottom();
-  }
-
-  async function newConversation() {
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-    currentConvId = null;
+  /* ─────────────────────────────────────────
+     CHAT API
+  ───────────────────────────────────────── */
+  function chipPrompt(text) {
     const input = document.getElementById('messageInput');
-    if (input) input.value = '';
-    
-    const chatArea = document.getElementById('chatArea');
-    if (chatArea) {
-      chatArea.innerHTML = `
-        <div class="empty-state" id="welcomeScreen" style="margin-top: 10vh;">
-          <div class="empty-icon">🤖</div>
-          <h2 style="font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 12px;">How can I help you today?</h2>
-          <p style="max-width: 500px; margin: 0 auto; line-height: 1.6;">I can manage your Microsoft 365 emails, schedule events, and organize your tasks.</p>
-        </div>`;
-    }
-    
-    document.querySelectorAll('.conv-item').forEach(i => i.classList.remove('active'));
-    const viewTitle = document.getElementById('viewTitle');
-    if (viewTitle) viewTitle.textContent = 'New Chat';
-    
-    if (currentView !== 'chat') switchView('chat');
-    await loadConversations();
-    if (input) input.focus();
+    if (input) { input.value = text; autoResize(input); input.focus(); }
   }
 
   function handleKey(e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 140) + 'px';
   }
 
   async function sendMessage() {
@@ -1326,15 +1496,16 @@
     if (!text || isLoading) return;
 
     const welcome = document.getElementById('welcomeScreen');
-    if(welcome) welcome.remove();
+    if (welcome) welcome.remove();
 
-    input.value = ''; 
+    input.value = '';
+    input.style.height = 'auto';
     isLoading = true;
     document.getElementById('sendBtn').disabled = true;
 
     appendMessage('user', text);
     const typingId = 'typing_' + Date.now();
-    appendMessage('assistant', '<div class="loading-spinner" style="width:16px;height:16px;border-width:2px;"></div>', typingId);
+    appendMessage('assistant', '<div class="thinking-dots"><span></span><span></span><span></span></div>', typingId);
 
     try {
       const body = { message: text };
@@ -1347,24 +1518,24 @@
       });
 
       const el = document.getElementById(typingId);
-      if(el) el.remove();
+      if (el) el.remove();
 
       if (!r.ok) {
         if (r.status === 401) { window.location.href = '/login.html'; return; }
-        appendMessage('assistant', `⚠️ Error occurred.`);
+        appendMessage('assistant', '⚠️ An error occurred. Please try again.');
         return;
       }
 
       const data = await r.json();
       if (!currentConvId) {
         currentConvId = data.conversation_id;
-        document.getElementById('viewTitle').textContent = text.slice(0, 30) + '...';
+        document.getElementById('viewTitle').textContent = text.slice(0,32) + (text.length > 32 ? '…' : '');
         await loadConversations();
       }
       appendMessage('assistant', data.reply, null, true, true);
     } catch(e) {
       document.getElementById(typingId)?.remove();
-      appendMessage('assistant', '⚠️ Network error.');
+      appendMessage('assistant', '⚠️ Network error. Check your connection.');
     } finally {
       isLoading = false;
       document.getElementById('sendBtn').disabled = false;
@@ -1374,7 +1545,7 @@
   function appendMessage(role, content, id=null, speakIt=false, animateTyping=false) {
     const area = document.getElementById('chatArea');
     const div = document.createElement('div');
-    if(id) div.id = id;
+    if (id) div.id = id;
     div.className = `message ${role}`;
 
     const avatar = document.createElement('div');
@@ -1391,195 +1562,445 @@
       bubble.innerHTML = escHtml(content).replace(/\n/g, '<br>');
       area.appendChild(div);
       scrollToBottom();
-    } else if (content.includes('loading-spinner')) {
+    } else if (content.includes('thinking-dots') || content.includes('loading-spinner')) {
       bubble.innerHTML = content;
       area.appendChild(div);
       scrollToBottom();
     } else {
       area.appendChild(div);
-      const formattedHtml = formatMsg(content);
-
+      const formatted = formatMsg(content);
       if (animateTyping) {
         bubble.innerHTML = '';
         let i = 0;
-        const speed = 12;
         const timer = setInterval(() => {
-          i += 4;
-          if (i >= formattedHtml.length) {
-            bubble.innerHTML = formattedHtml;
+          i += 5;
+          if (i >= formatted.length) {
+            bubble.innerHTML = formatted;
             clearInterval(timer);
             scrollToBottom();
           } else {
-            bubble.innerHTML = formattedHtml.slice(0, i);
+            bubble.innerHTML = formatted.slice(0, i);
             scrollToBottom();
           }
-        }, speed);
+        }, 10);
       } else {
-        bubble.innerHTML = formattedHtml;
+        bubble.innerHTML = formatted;
         scrollToBottom();
       }
-
-      if (speakIt) {
-        speak(content, avatar);
-      }
+      if (speakIt) speak(content, avatar);
     }
   }
-  
+
   function formatMsg(text) {
     return escHtml(text)
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/`([^`]+)`/g, '<code style="background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px;">$1</code>')
+      .replace(/`([^`]+)`/g, '<code style="background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px;font-size:0.88em;">$1</code>')
       .replace(/\n/g, '<br/>');
   }
 
   function scrollToBottom() {
     const area = document.getElementById('chatArea');
-    area.scrollTop = area.scrollHeight;
-  }
-  
-  // ── LiveKit WebRTC Realtime Agent Integration ──
-  let liveKitRoom = null;
-  let isLiveBotActive = false;
-
-  async function toggleLiveBot() {
-    if (isLiveBotActive) {
-      await disconnectLiveBot();
-    } else {
-      await connectLiveBot();
-    }
+    if (area) area.scrollTop = area.scrollHeight;
   }
 
-  async function connectLiveBot() {
-    const btn = document.getElementById('liveBotBtn');
-    const statusText = document.getElementById('liveStatusText');
-    const statusDot = document.getElementById('liveStatusDot');
-    const actionText = document.getElementById('liveActionText');
-    const icon = document.getElementById('liveBotIcon');
-
+  /* ─────────────────────────────────────────
+     CONVERSATION MANAGEMENT
+  ───────────────────────────────────────── */
+  async function loadConversations() {
     try {
-      if (btn) btn.classList.add('connecting');
-      if (statusText) statusText.textContent = 'Connecting...';
-      if (statusDot) statusDot.style.background = '#f59e0b';
-      if (actionText) actionText.textContent = 'Joining Live Room...';
+      const r = await fetch('/api/conversations');
+      if (!r.ok) return;
+      const convs = await r.json();
+      const list = document.getElementById('convList');
+      if (!list) return;
+      list.innerHTML = '';
+      convs.forEach(c => {
+        const item = document.createElement('div');
+        item.className = 'conv-item' + (c.id === currentConvId ? ' active' : '');
+        const safeTitle = escHtml(c.title || 'Conversation');
+        item.innerHTML = `
+          <div class="conv-title-wrap"><span>💬</span><span class="conv-title-text">${safeTitle}</span></div>
+          <div class="conv-actions">
+            <button class="conv-action-btn" title="Rename" onclick="event.stopPropagation(); renameConversation('${c.id}', '${safeTitle.replace(/'/g,"\\'")}')" >✏️</button>
+            <button class="conv-action-btn delete" title="Delete" onclick="event.stopPropagation(); deleteConversation('${c.id}')">🗑️</button>
+          </div>
+        `;
+        item.onclick = () => loadConversation(c.id, c.title);
+        list.appendChild(item);
+      });
+    } catch(e) {}
+  }
 
-      // 1. Fetch WebRTC token from backend
-      const r = await fetch('/api/livekit/token?room=jarvis-room');
-      if (!r.ok) {
-        const err = await r.json();
-        throw new Error(err.detail || 'Failed to get LiveKit token');
+  async function renameConversation(id, oldTitle) {
+    const newTitle = prompt('Rename conversation:', oldTitle);
+    if (!newTitle || !newTitle.trim() || newTitle.trim() === oldTitle) return;
+    try {
+      const r = await fetch(`/api/conversations/${id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: newTitle.trim() })
+      });
+      if (r.ok) {
+        if (currentConvId === id) document.getElementById('viewTitle').textContent = newTitle.trim();
+        await loadConversations();
+        showToast('Conversation renamed');
       }
+    } catch(e) {}
+  }
+
+  async function deleteConversation(id) {
+    if (!confirm('Delete this conversation?')) return;
+    try {
+      const r = await fetch(`/api/conversations/${id}`, { method: 'DELETE' });
+      if (r.ok) {
+        if (currentConvId === id) newConversation();
+        await loadConversations();
+        showToast('Conversation deleted');
+      }
+    } catch(e) {}
+  }
+
+  async function loadConversation(id, title) {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    currentConvId = id;
+    document.getElementById('viewTitle').textContent = title || 'Conversation';
+    document.getElementById('chatArea').innerHTML = '';
+    if (currentView !== 'chat') selectAgent('chat');
+    try {
+      const r = await fetch(`/api/conversations/${id}/messages`);
+      const msgs = await r.json();
+      msgs.forEach(m => appendMessage(m.role === 'user' ? 'user' : 'assistant', m.content, null, false, false));
+    } catch(e) {}
+    await loadConversations();
+    scrollToBottom();
+  }
+
+  async function newConversation() {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    currentConvId = null;
+    const input = document.getElementById('messageInput');
+    if (input) { input.value = ''; input.style.height = 'auto'; }
+    document.getElementById('chatArea').innerHTML = `
+      <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-orb">🤖</div>
+        <h1 class="welcome-title">How can I help you today?</h1>
+        <p class="welcome-sub">Manage your Outlook emails, schedule meetings, track tasks — all via voice or text.</p>
+        <div class="welcome-chips">
+          <div class="welcome-chip" onclick="chipPrompt('Read my latest emails')">📧 Read emails</div>
+          <div class="welcome-chip" onclick="chipPrompt('What\\'s on my calendar today?')">📅 Today's schedule</div>
+          <div class="welcome-chip" onclick="chipPrompt('Show my pending tasks')">☑️ My tasks</div>
+          <div class="welcome-chip" onclick="chipPrompt('Draft a professional email')">✏️ Draft email</div>
+        </div>
+      </div>`;
+    document.querySelectorAll('.conv-item').forEach(i => i.classList.remove('active'));
+    document.getElementById('viewTitle').textContent = 'Chat Agent';
+    if (currentView !== 'chat') selectAgent('chat');
+    await loadConversations();
+    if (input) input.focus();
+  }
+
+  /* ─────────────────────────────────────────
+     EMAILS
+  ───────────────────────────────────────── */
+  function switchEmailTab(folder) {
+    currentEmailFolder = folder;
+    document.querySelectorAll('.email-tab').forEach(t => t.classList.remove('active'));
+    const tab = document.getElementById('tab-' + folder);
+    if (tab) tab.classList.add('active');
+    loadEmails(folder);
+  }
+
+  async function loadEmails(folder = currentEmailFolder) {
+    const list = document.getElementById('emailList');
+    list.innerHTML = '<div class="loading-spinner"></div>';
+    try {
+      const r = await fetch(`/api/emails?folder=${folder}&top=20`);
+      if (!r.ok) throw new Error();
       const data = await r.json();
-
-      // Check if LiveKit Client SDK is loaded
-      if (typeof LivekitClient === 'undefined') {
-        throw new Error('LiveKit WebRTC client SDK is loading... Please try again in a moment.');
+      list.innerHTML = '';
+      if (!data.value || !data.value.length) {
+        list.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div>No emails in ${folder}</div>`;
+        return;
       }
-
-      // 2. Connect to LiveKit Room
-      liveKitRoom = new LivekitClient.Room({
-        adaptiveStream: true,
-        dynacast: true,
+      data.value.forEach(msg => {
+        const div = document.createElement('div');
+        div.className = 'card email-item';
+        const date = new Date(msg.receivedDateTime || msg.createdDateTime).toLocaleDateString(undefined, {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+        div.innerHTML = `
+          <div class="email-header">
+            <div class="email-sender">${escHtml(msg.from?.emailAddress?.name || msg.from?.emailAddress?.address || 'Unknown')}</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="email-date">${date}</div>
+              <button class="conv-action-btn delete" title="Delete" onclick="deleteEmail(event,'${msg.id}')">🗑️</button>
+            </div>
+          </div>
+          <div class="email-subject">${escHtml(msg.subject || '(No Subject)')}</div>
+          <div class="email-preview">${escHtml(msg.bodyPreview || '')}</div>
+        `;
+        div.onclick = () => openEmailModal(msg);
+        list.appendChild(div);
       });
-
-      // Handle track subscribed (agent speaking)
-      liveKitRoom.on(LivekitClient.RoomEvent.TrackSubscribed, (track, publication, participant) => {
-        if (track.kind === LivekitClient.Track.Kind.Audio) {
-          const audioElement = track.attach();
-          audioElement.autoplay = true;
-          document.body.appendChild(audioElement);
-          audioElement.play().catch(err => console.log('Audio autoplay play exception:', err));
-          addLiveLog('🤖 Jarvis Agent is speaking...');
-        }
-      });
-
-
-      liveKitRoom.on(LivekitClient.RoomEvent.LocalTrackPublished, (pub) => {
-        if (pub.kind === LivekitClient.Track.Kind.Audio) {
-          addLiveLog('🎤 Microphone active & sending audio to Jarvis.');
-        }
-      });
-
-      liveKitRoom.on(LivekitClient.RoomEvent.ParticipantConnected, (p) => {
-        addLiveLog(`Participant joined: ${p.identity}`);
-      });
-
-      liveKitRoom.on(LivekitClient.RoomEvent.Disconnected, () => {
-        disconnectLiveBotUI();
-      });
-
-      await liveKitRoom.connect(data.ws_url, data.token);
-
-      // Enable local microphone with maximum noise cancellation constraints
-      await liveKitRoom.localParticipant.setMicrophoneEnabled(true, {
-        echoCancellation: { exact: true },
-        noiseSuppression: { exact: true },
-        autoGainControl: { exact: true },
-        channelCount: 1,
-        sampleRate: 48000,
-      });
-
-
-      isLiveBotActive = true;
-      if (btn) {
-        btn.classList.remove('connecting');
-        btn.classList.add('active');
-      }
-      if (statusText) statusText.textContent = 'LIVE AGENT ACTIVE';
-      if (statusDot) statusDot.style.background = '#10b981';
-      if (actionText) actionText.textContent = 'Tap Again to Stop Call';
-      if (icon) icon.textContent = '🎙️';
-      showToast('⚡ Live Assistant Connected!');
-
-      const transcripts = document.getElementById('liveTranscripts');
-      if (transcripts) transcripts.style.display = 'block';
-      addLiveLog('✅ Connected to LiveKit Room. Say hello to Jarvis!');
-
-    } catch (e) {
-      console.error('LiveBot error:', e);
-      disconnectLiveBotUI();
-      showToast(`⚠️ Voice Error: ${e.message}`);
+    } catch(e) {
+      list.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div>Failed to load emails</div>';
     }
   }
 
-  async function disconnectLiveBot() {
-    if (liveKitRoom) {
-      try {
-        await liveKitRoom.disconnect();
-      } catch (e) {}
+  async function deleteEmail(event, messageId) {
+    if (event) event.stopPropagation();
+    if (!confirm('Delete this email?')) return;
+    try {
+      const r = await fetch(`/api/emails/${messageId}`, { method: 'DELETE' });
+      if (r.ok) { showToast('Email deleted'); loadEmails(currentEmailFolder); }
+      else showToast('Failed to delete email');
+    } catch(e) { showToast('Error deleting email'); }
+  }
+
+  function openEmailModal(msg) {
+    document.getElementById('emailModalBody').innerHTML = `
+      <div style="margin-bottom:10px;font-weight:600;">From: ${escHtml(msg.from?.emailAddress?.name || '')} &lt;${escHtml(msg.from?.emailAddress?.address || '')}&gt;</div>
+      <div style="margin-bottom:10px;font-weight:600;">Subject: ${escHtml(msg.subject || '')}</div>
+      <hr style="border:none;border-top:1px solid var(--border);margin:12px 0;"/>
+      <div style="white-space:pre-wrap;font-size:0.88rem;">${escHtml(msg.body?.content || msg.bodyPreview || '')}</div>
+    `;
+    document.getElementById('emailModalFooter').innerHTML = `
+      <button class="btn btn-danger" onclick="closeModal('emailModal');deleteEmail(null,'${msg.id}')">Delete</button>
+      <button class="btn btn-outline" onclick="closeModal('emailModal')">Close</button>
+      <button class="btn btn-primary" onclick="closeModal('emailModal');openDraftReply('${msg.id}','${escHtml(msg.from?.emailAddress?.address||'')}','Re: ${escHtml(msg.subject||'')}')">Reply</button>
+      <button class="btn btn-primary" style="background:var(--accent);" onclick="closeModal('emailModal');summarizeEmail('${msg.id}')">Summarize</button>
+    `;
+    document.getElementById('emailModal').classList.add('active');
+  }
+
+  function openDraftModal() {
+    document.getElementById('draftModalTitle').textContent = 'Compose Draft';
+    document.getElementById('draftTo').value = '';
+    document.getElementById('draftSubject').value = '';
+    document.getElementById('draftBody').value = '';
+    document.getElementById('draftReplyId').value = '';
+    document.getElementById('draftSubjectGroup').style.display = 'block';
+    document.getElementById('draftModal').classList.add('active');
+  }
+
+  function openDraftReply(replyId, to, subject) {
+    document.getElementById('draftModalTitle').textContent = 'Reply Draft';
+    document.getElementById('draftTo').value = to;
+    document.getElementById('draftSubject').value = subject;
+    document.getElementById('draftBody').value = '';
+    document.getElementById('draftReplyId').value = replyId;
+    document.getElementById('draftSubjectGroup').style.display = 'none';
+    document.getElementById('draftModal').classList.add('active');
+  }
+
+  async function submitDraft() {
+    const replyId = document.getElementById('draftReplyId').value;
+    const to = document.getElementById('draftTo').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const subject = document.getElementById('draftSubject').value;
+    const body = document.getElementById('draftBody').value;
+    try {
+      let r;
+      if (replyId) {
+        r = await fetch(`/api/emails/${replyId}/reply-draft`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ comment: body })
+        });
+      } else {
+        r = await fetch('/api/emails/draft', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ to_recipients: to, subject, body_content: body })
+        });
+      }
+      if (r.ok) {
+        closeModal('draftModal'); showToast('Draft saved!');
+        if (currentEmailFolder === 'drafts') loadEmails('drafts');
+      } else showToast('Failed to save draft');
+    } catch(e) { showToast('Error saving draft'); }
+  }
+
+  function summarizeEmail(id) {
+    selectAgent('chat');
+    document.getElementById('messageInput').value = `Summarize the email with ID: ${id}`;
+    sendMessage();
+  }
+
+  /* ─────────────────────────────────────────
+     CALENDAR
+  ───────────────────────────────────────── */
+  async function loadEvents() {
+    const list = document.getElementById('eventList');
+    list.innerHTML = '<div class="loading-spinner"></div>';
+    try {
+      const r = await fetch('/api/events?top=15');
+      if (!r.ok) throw new Error();
+      const data = await r.json();
+      list.innerHTML = '';
+      if (!data.value || !data.value.length) {
+        list.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div>No upcoming events</div>';
+        return;
+      }
+      data.value.forEach(evt => {
+        const div = document.createElement('div');
+        div.className = 'card event-item';
+        const startDt = new Date(evt.start.dateTime + 'Z').toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+        div.innerHTML = `
+          <div class="event-time">
+            <div class="event-time-start">${startDt}</div>
+            <div class="event-time-date">PKT</div>
+          </div>
+          <div class="event-details">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div class="event-title">${escHtml(evt.subject || '(No Title)')}</div>
+              <button class="conv-action-btn delete" title="Delete" onclick="deleteEvent('${evt.id}')">🗑️</button>
+            </div>
+            ${evt.location?.displayName ? `<div class="event-loc">📍 ${escHtml(evt.location.displayName)}</div>` : ''}
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    } catch(e) {
+      list.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div>Failed to load events</div>';
     }
-    disconnectLiveBotUI();
-    showToast('Live Assistant Call Ended.');
   }
 
-  function disconnectLiveBotUI() {
-    isLiveBotActive = false;
-    liveKitRoom = null;
-    const btn = document.getElementById('liveBotBtn');
-    const statusText = document.getElementById('liveStatusText');
-    const statusDot = document.getElementById('liveStatusDot');
-    const actionText = document.getElementById('liveActionText');
-    const icon = document.getElementById('liveBotIcon');
-
-    if (btn) btn.classList.remove('connecting', 'active');
-    if (statusText) statusText.textContent = 'Ready to Connect';
-    if (statusDot) statusDot.style.background = 'var(--muted2)';
-    if (actionText) actionText.textContent = 'Touch Bot to Start Realtime Voice Agent';
-    if (icon) icon.textContent = '🤖';
+  function openEventModal() {
+    ['eventSubject','eventStart','eventEnd','eventLocation','eventBody'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('eventModal').classList.add('active');
   }
 
-  function addLiveLog(msg) {
-    const logs = document.getElementById('liveLogs');
-    if (!logs) return;
-    const div = document.createElement('div');
-    div.style.marginBottom = '4px';
-    div.textContent = msg;
-    logs.appendChild(div);
-    const container = logs.parentElement;
-    if (container) container.scrollTop = container.scrollHeight;
+  async function submitEvent() {
+    const subject = document.getElementById('eventSubject').value;
+    const startVal = document.getElementById('eventStart').value;
+    const endVal = document.getElementById('eventEnd').value;
+    const location = document.getElementById('eventLocation').value;
+    const body = document.getElementById('eventBody').value;
+    if (!subject || !startVal || !endVal) { showToast('Fill in subject, start and end time.'); return; }
+    try {
+      const r = await fetch('/api/events', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          subject,
+          start_datetime: new Date(startVal).toISOString(),
+          end_datetime: new Date(endVal).toISOString(),
+          timezone: 'Pakistan Standard Time',
+          location, body
+        })
+      });
+      if (r.ok) { closeModal('eventModal'); showToast('Event created!'); loadEvents(); }
+      else showToast('Failed to create event');
+    } catch(e) { showToast('Error creating event'); }
+  }
+
+  async function deleteEvent(eventId) {
+    if (!confirm('Delete this calendar event?')) return;
+    try {
+      const r = await fetch(`/api/events/${eventId}`, { method: 'DELETE' });
+      if (r.ok) { showToast('Event deleted'); loadEvents(); }
+      else showToast('Failed to delete event');
+    } catch(e) { showToast('Error'); }
+  }
+
+  /* ─────────────────────────────────────────
+     TO-DO TASKS
+  ───────────────────────────────────────── */
+  async function loadTodos() {
+    const list = document.getElementById('todoList');
+    list.innerHTML = '<div class="loading-spinner"></div>';
+    try {
+      const r = await fetch('/api/todos');
+      if (!r.ok) throw new Error();
+      const data = await r.json();
+      list.innerHTML = '';
+      if (!data.value || !data.value.length) {
+        list.innerHTML = '<div class="empty-state"><div class="empty-icon">☑️</div>No tasks found</div>';
+        return;
+      }
+      data.value.forEach(task => {
+        const div = document.createElement('div');
+        div.className = 'todo-item';
+        const isComp = task.status === 'completed';
+        const dueVal = task.dueDateTime?.dateTime ? task.dueDateTime.dateTime.slice(0,10) : '';
+        div.innerHTML = `
+          <div class="todo-checkbox ${isComp?'completed':''}" onclick="toggleTodo('${task.id}','${task.status}')"></div>
+          <div class="todo-content">
+            <div class="todo-title ${isComp?'completed':''}">${escHtml(task.title || 'Untitled Task')}</div>
+            ${dueVal ? `<div class="todo-meta">📅 Due: ${dueVal}</div>` : ''}
+          </div>
+          <div class="todo-actions">
+            <button class="conv-action-btn delete" title="Delete" onclick="deleteTodo('${task.id}')">🗑️</button>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    } catch(e) {
+      list.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div>Failed to load tasks</div>';
+    }
+  }
+
+  function openTodoModal() {
+    document.getElementById('todoTitle').value = '';
+    document.getElementById('todoDueDate').value = '';
+    document.getElementById('todoDueTime').value = '';
+    document.getElementById('todoModal').classList.add('active');
+  }
+
+  async function submitTodo() {
+    const title = document.getElementById('todoTitle').value;
+    const due_date = document.getElementById('todoDueDate').value;
+    const due_time = document.getElementById('todoDueTime').value;
+    if (!title || !title.trim()) { showToast('Enter a task title'); return; }
+    try {
+      const r = await fetch('/api/todos', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ list_id:'default', title:title.trim(), due_date, due_time })
+      });
+      if (r.ok) { closeModal('todoModal'); showToast('Task added!'); loadTodos(); }
+      else showToast('Failed to add task');
+    } catch(e) { showToast('Error adding task'); }
+  }
+
+  async function toggleTodo(taskId, currentStatus) {
+    const newStatus = currentStatus === 'completed' ? 'notStarted' : 'completed';
+    try {
+      const r = await fetch(`/api/todos/${taskId}`, {
+        method:'PATCH', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (r.ok) { showToast(newStatus === 'completed' ? '✅ Task completed!' : 'Task re-opened'); loadTodos(); }
+    } catch(e) {}
+  }
+
+  async function deleteTodo(taskId) {
+    if (!confirm('Delete this task?')) return;
+    try {
+      const r = await fetch(`/api/todos/${taskId}`, { method:'DELETE' });
+      if (r.ok) { showToast('Task deleted'); loadTodos(); }
+      else showToast('Failed to delete task');
+    } catch(e) { showToast('Error'); }
+  }
+
+  /* ─────────────────────────────────────────
+     UTILS
+  ───────────────────────────────────────── */
+  function closeModal(id) { document.getElementById(id)?.classList.remove('active'); }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    if (!t) return;
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3200);
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
   async function logout() { window.location.href = '/auth/logout'; }
 
+  /* ─────────────────────────────────────────
+     BOOT
+  ───────────────────────────────────────── */
   init();
 </script>
 </body>
