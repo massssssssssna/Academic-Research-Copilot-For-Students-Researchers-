@@ -12,10 +12,19 @@ supabase>=2.3.0
 email-validator>=2.1.1
 langchain-groq>=0.1.3
 
+# RAG & Web Search Dependencies
+pypdf>=4.0.0
+python-docx>=1.0.0
+tavily-python>=0.3.0
+qdrant-client>=1.7.0
+python-multipart>=0.0.9
+
 # LiveKit Agents & Plugins
+livekit-api>=1.0.0
 livekit-agents>=1.0.0
 livekit-plugins-openai>=1.0.0
 livekit-plugins-deepgram>=1.0.0
 livekit-plugins-cartesia>=1.0.0
 livekit-plugins-groq>=1.0.0
 livekit-plugins-silero>=1.0.0
+

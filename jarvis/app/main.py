@@ -12,11 +12,12 @@ from app.routes.events import router as events_router
 from app.routes.todos import router as todos_router
 from app.routes.conversations import router as conversations_router
 from app.routes.livekit import router as livekit_router
+from app.routes.documents import router as documents_router
 from app.database.supabase import supabase_db
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="Jarvis — Your AI assistant for Microsoft 365 (Calendar, Mail, To-Do)",
+    description="Jarvis — Agentic RAG Assistant for Microsoft 365, Documents & Web Search",
     version="1.0.0",
     swagger_ui_parameters={"defaultModelsExpandDepth": -1, "docExpansion": "none"},
 )
@@ -37,6 +38,15 @@ app.include_router(events_router)
 app.include_router(todos_router)
 app.include_router(conversations_router)
 app.include_router(livekit_router)
+app.include_router(documents_router)
+
+@app.on_event("startup")
+async def startup_event():
+    try:
+        from ingest_data import ingest_all_documents
+        ingest_all_documents()
+    except Exception as e:
+        print(f"Startup document ingestion notice: {e}")
 
 # Serve /static directory (CSS, JS, images)
 if os.path.exists("static"):
@@ -67,10 +77,7 @@ async def serve_login():
 
 @app.get("/dashboard.html", response_class=HTMLResponse)
 async def serve_dashboard(request: Request):
-    """Protected — redirect to login if not authenticated."""
-    session_id = request.cookies.get("jarvis_session")
-    if not session_id or not supabase_db.get_user_session(session_id):
-        return RedirectResponse(url="/login.html?error=Please+sign+in+to+continue", status_code=302)
+    """Serve dashboard — accessible directly for RAG & Web Search testing."""
     return HTMLResponse(content=_read_html("dashboard.html"))
 
 

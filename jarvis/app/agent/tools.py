@@ -2,6 +2,8 @@ from typing import List, Optional, Dict, Any
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 from app.graph.client import MicrosoftGraphClient, MicrosoftGraphError
+from app.rag.corrective_rag import CorrectiveRAGService
+from app.tools.web_search import execute_web_search
 
 # ---------------------------------------------------------
 # Tool Input Schemas
@@ -131,7 +133,7 @@ def _resolve_list_id(client: MicrosoftGraphClient, list_id: Optional[str]) -> st
 
 @tool(args_schema=GetEmailsSchema)
 def get_emails(session_id: str, top: int = 10, search: Optional[str] = None, folder: Optional[str] = "inbox") -> str:
-    """Fetch the latest emails from the user's mail folder ('inbox', 'drafts', 'sentitems', 'deleteditems', or 'all')."""
+    """Fetch Outlook emails from the user's Microsoft 365 inbox, drafts, or sent items. DO NOT use this tool for local PDF files, uploaded documents, or RAG questions."""
     try:
         client = MicrosoftGraphClient(session_id)
         raw_res = client.get_messages(top=top, search=search, folder=folder or "inbox")
@@ -241,65 +243,67 @@ def summarize_and_draft_reply(session_id: str, message_id: str, custom_notes: Op
 
 @tool(args_schema=GetEventsSchema)
 def get_events(session_id: str, top: int = 15, start_datetime: Optional[str] = None, end_datetime: Optional[str] = None) -> str:
-    """Fetch the user's calendar events, strictly categorized into Upcoming, Today, and Past events."""
+    """Fetch the user's UPCOMING calendar events starting from today (PKT). Past events from previous years are excluded automatically."""
     try:
         client = MicrosoftGraphClient(session_id)
-        now_utc = datetime.now(timezone.utc)
-        today_str = now_utc.strftime("%Y-%m-%d")
-        
-        # If no explicit date range provided, fetch from today to 30 days ahead
-        if not start_datetime:
-            start_datetime = now_utc.strftime("%Y-%m-%dT00:00:00Z")
-            end_datetime = (now_utc + timedelta(days=30)).strftime("%Y-%m-%dT23:59:59Z")
+        # Use PKT (UTC+5) for correct "today" reference
+        pkt = timezone(timedelta(hours=5))
+        now_pkt = datetime.now(pkt)
+        today_str = now_pkt.strftime("%Y-%m-%d")
+        current_year = now_pkt.year  # e.g., 2026
 
         raw_res = client.get_events(top=top, start_datetime=start_datetime, end_datetime=end_datetime)
         if isinstance(raw_res, dict) and "value" in raw_res:
             events = raw_res["value"]
             if not events:
-                return "No calendar events found."
-            
+                return (
+                    f"No upcoming calendar events found between today ({today_str}) and the next 30 days.\n"
+                    f"(Current date: {now_pkt.strftime('%A, %B %d, %Y')} PKT)"
+                )
+
             today_events = []
             upcoming_events = []
-            past_events = []
-            
+
             for ev in events:
                 ev_id = ev.get("id", "")
                 subject = ev.get("subject", "Untitled Event")
                 start_obj = ev.get("start", {})
                 end_obj = ev.get("end", {})
-                
+
                 s_raw = start_obj.get("dateTime", "")
                 e_raw = end_obj.get("dateTime", "")
-                
+
                 s_dt = s_raw[:16].replace("T", " ") if s_raw else "Unknown start"
                 e_dt = e_raw[:16].replace("T", " ") if e_raw else "Unknown end"
                 tz = start_obj.get("timeZone", "UTC")
                 loc = ev.get("location", {}).get("displayName", "")
                 loc_str = f" | Location: {loc}" if loc else ""
-                
+
                 item_text = f"- ID: {ev_id}\n  Subject: '{subject}'\n  Time: {s_dt} to {e_dt} ({tz}){loc_str}"
-                
+
                 if s_raw:
                     s_date = s_raw.split("T")[0] if "T" in s_raw else s_raw[:10]
                     if s_date == today_str:
                         today_events.append(item_text)
                     elif s_date > today_str:
                         upcoming_events.append(item_text)
-                    else:
-                        past_events.append(item_text)
+                    # Past events (< today_str) are skipped — they should not appear
+                    # since calendarView already filters them at API level
                 else:
                     upcoming_events.append(item_text)
-            
-            res_lines = [f"Calendar Events Overview (Current UTC Date: {today_str}):"]
+
+            res_lines = [
+                f"Calendar Events (Today: {now_pkt.strftime('%A, %B %d, %Y')} | {current_year}):"
+            ]
             if today_events:
-                res_lines.append("\n📅 TODAY'S / PRESENT EVENTS:\n" + "\n".join(today_events))
+                res_lines.append("\n📅 TODAY'S EVENTS:\n" + "\n".join(today_events))
             if upcoming_events:
-                res_lines.append("\n🔮 UPCOMING / FUTURE EVENTS:\n" + "\n".join(upcoming_events))
-            if past_events:
-                res_lines.append("\n📜 PAST EVENTS:\n" + "\n".join(past_events))
-                
+                res_lines.append("\n🔮 UPCOMING EVENTS (next 30 days):\n" + "\n".join(upcoming_events))
+            if not today_events and not upcoming_events:
+                res_lines.append(f"\nNo events scheduled for today or the next 30 days.")
+
             return "\n".join(res_lines)
-            
+
         return str(raw_res)
     except Exception as e:
         return _format_error(e)
@@ -512,9 +516,67 @@ def delete_todo(session_id: str, task_id: str, list_id: Optional[str] = None) ->
     except Exception as e:
         return _format_error(e)
 
+# ---------------------------------------------------------
+# RAG & WEB SEARCH TOOLS
+# ---------------------------------------------------------
+
+class SearchDocumentsSchema(SessionAuthSchema):
+    query: str = Field(..., description="The search question to query uploaded local documents (PDF, DOCX, TXT, MD) using RAG vector search.")
+    top_k: Optional[int] = Field(4, description="Number of relevant document chunks to retrieve.")
+
+class WebSearchToolSchema(SessionAuthSchema):
+    query: str = Field(..., description="The search query to search the internet for latest news, current events, online technical documentation, or live external information.")
+
+@tool(args_schema=SearchDocumentsSchema)
+def search_documents(session_id: str, query: str, top_k: int = 4) -> str:
+    """Search local uploaded documents (PDF, Word DOCX, TXT, Markdown) and private knowledge base using RAG vector search. Use this tool for ALL questions asking about uploaded files, PDFs, documents, or RAG. This tool DOES NOT query Outlook emails or Microsoft Graph."""
+    try:
+        rag_service = CorrectiveRAGService()
+        result = rag_service.retrieve_with_correction(query, top_k=top_k)
+        
+        chunks = result.get("chunks", [])
+        if not chunks:
+            return f"No relevant document content found in uploaded local files for query: '{query}'."
+            
+        formatted_chunks = []
+        for doc_chunk, score in chunks:
+            meta = doc_chunk.metadata
+            source = meta.get("source", "Unknown Document")
+            page_info = f" (Page {meta.get('page')})" if "page" in meta else ""
+            formatted_chunks.append(f"Source: {source}{page_info} | Score: {round(score, 3)}\nContent: {doc_chunk.page_content}")
+            
+        header = f"Found {len(chunks)} relevant document snippet(s) [Corrective RAG retries: {result.get('retries', 0)}]:"
+        return f"{header}\n\n" + "\n\n---\n\n".join(formatted_chunks)
+    except Exception as e:
+        return f"Error executing RAG document search: {str(e)}"
+
+@tool(args_schema=WebSearchToolSchema)
+def web_search(session_id: str, query: str) -> str:
+    """Search the internet for current online information, latest tech documentation, external news, or live web data."""
+    try:
+        data = execute_web_search(query)
+        results = data.get("results", [])
+        if not results:
+            return f"No external web search results found for query: '{query}'."
+            
+        formatted = []
+        if data.get("answer"):
+            formatted.append(f"Web Summary: {data['answer']}")
+            
+        for idx, r in enumerate(results, start=1):
+            title = r.get("title", "No Title")
+            url = r.get("url", "")
+            snippet = r.get("content", "")
+            formatted.append(f"{idx}. [{title}]({url})\n   Snippet: {snippet}")
+            
+        return f"Web Search Results for '{query}' (Provider: {data.get('provider', 'Tavily')}):\n\n" + "\n\n".join(formatted)
+    except Exception as e:
+        return f"Error executing Web Search: {str(e)}"
+
 # List of all tools to bind to the LLM
 jarvis_tools = [
     get_emails, get_email, delete_email, delete_all_drafts, create_email_draft, create_reply_draft, summarize_and_draft_reply,
     get_events, get_event, create_event, update_event, delete_event,
-    get_todo_lists, get_todos, get_todo, create_todo, update_todo, delete_todo
+    get_todo_lists, get_todos, get_todo, create_todo, update_todo, delete_todo,
+    search_documents, web_search
 ]

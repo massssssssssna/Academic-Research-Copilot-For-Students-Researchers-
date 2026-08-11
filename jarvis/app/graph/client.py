@@ -169,18 +169,35 @@ class MicrosoftGraphClient:
         return self._request("POST", f"/me/messages/{message_id}/createReply", json=payload)
         
     def get_events(
-        self, 
-        top: int = 10, 
-        skip: int = 0, 
-        start_datetime: Optional[str] = None, 
+        self,
+        top: int = 10,
+        skip: int = 0,
+        start_datetime: Optional[str] = None,
         end_datetime: Optional[str] = None
     ):
-        params = {"$top": top, "$skip": skip}
-        if start_datetime and end_datetime:
-            params["startDateTime"] = start_datetime
-            params["endDateTime"] = end_datetime
-            return self._request("GET", "/me/calendarView", params=params)
-        return self._request("GET", "/me/events", params=params)
+        """
+        Always use calendarView (not /me/events) so that date filtering
+        is applied at the API level — prevents past 2024 events from appearing.
+        """
+        from datetime import datetime, timedelta, timezone
+        pkt = timezone(timedelta(hours=5))
+        now_pkt = datetime.now(pkt)
+
+        # Default: today (00:00 PKT) to 30 days from now
+        if not start_datetime:
+            start_datetime = now_pkt.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        if not end_datetime:
+            end_datetime = (now_pkt + timedelta(days=30)).astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        params = {
+            "$top": top,
+            "$skip": skip,
+            "startDateTime": start_datetime,
+            "endDateTime": end_datetime,
+            "$orderby": "start/dateTime asc",
+            "$select": "id,subject,start,end,location,bodyPreview"
+        }
+        return self._request("GET", "/me/calendarView", params=params)
 
     def get_event(self, event_id: str):
         return self._request("GET", f"/me/events/{event_id}")

@@ -1,0 +1,32 @@
+Jarvis Student Academic Guidelines Demo
+
+Document Purpose
+This fictional document represents a university academic guide that can be uploaded into Jarvis as a private knowledge source.
+
+Assignment Workflow
+Students should first read the assignment requirements, identify deliverables, divide the work into smaller tasks, and record important deadlines.
+A research assignment normally includes a topic definition, literature search, source evaluation, notes, draft writing, review, and final submission.
+
+Research Source Evaluation
+Students should prefer credible academic sources and verify important claims. Useful checks include the author's expertise, publication venue, publication date, evidence quality, and whether other reliable sources support the claim.
+
+AI Assistant Guidelines
+An AI assistant may help students organize notes, retrieve information from their private documents, summarize supplied material, and identify missing information. Students should verify important academic claims before submitting work.
+When the question concerns information inside uploaded university documents, Jarvis should prefer the local RAG knowledge base. When the user asks for current external information, Jarvis may use web search.
+
+Jarvis Tool Routing Examples
+Question: 'According to my research guide, what should I check before using a source?' -> Use RAG.
+Question: 'What is the latest research about agentic RAG?' -> Use Web Search.
+Question: 'Read my research notes and compare them with current online information.' -> Use RAG and Web Search.
+Question: 'Show my upcoming academic meeting.' -> Use Microsoft Graph Calendar.
+
+Demo Schedule
+Monday: collect research sources and update notes.
+Wednesday: complete the literature review draft.
+Thursday: attend the 2:00 PM project review meeting.
+Friday: revise the project document based on feedback.
+
+Expected RAG Answers
+If asked which week the prototype is planned for, the correct answer from the research document is Week 5.
+If asked when the fictional project review meeting occurs, the correct answer is Thursday at 2:00 PM.
+If asked what the assignment workflow includes, the answer should mention requirements, task breakdown, research, notes, drafting, review, and submission.

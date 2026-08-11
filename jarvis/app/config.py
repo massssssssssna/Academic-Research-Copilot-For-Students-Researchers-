@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     LLM_FAST_MODEL: str = os.getenv("LLM_FAST_MODEL", "llama-3.1-8b-instant")          # Low-latency model
     LLM_FALLBACK_MODEL: str = os.getenv("LLM_FALLBACK_MODEL", "llama-3.1-8b-instant")   # Active fallback model
     LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.3"))               # 0.0 (accurate/deterministic) to 1.0 (creative)
-    LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "150"))                      # Short generation token limit for instant speech
+    LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "2048"))                     # Token limit — must be ≥2048 for tool call JSON to fit
     
     # ── VOICE ASSISTANT & TTS/STT TUNING KNOBS ─────────────
     TTS_SPEECH_RATE: float = float(os.getenv("TTS_SPEECH_RATE", "1.1"))               # Fast playback speech rate
@@ -85,6 +85,16 @@ class Settings(BaseSettings):
     LIVEKIT_URL: str = os.getenv("LIVEKIT_URL", "")            # e.g. wss://your-project.livekit.cloud
     LIVEKIT_API_KEY: str = os.getenv("LIVEKIT_API_KEY", "")    # LiveKit API key
     LIVEKIT_API_SECRET: str = os.getenv("LIVEKIT_API_SECRET", "")  # LiveKit API secret
+
+    # ── RAG & WEB SEARCH SETTINGS ──────────────────────────
+    EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "local")  # 'local' = TF-IDF fallback, 'voyage' = Voyage AI
+    EMBEDDING_API_KEY: str = os.getenv("EMBEDDING_API_KEY", "")
+    TAVILY_API_KEY: str = os.getenv("TAVILY_API_KEY", "")
+    QDRANT_URL: str = os.getenv("QDRANT_URL", "")
+    QDRANT_API_KEY: str = os.getenv("QDRANT_API_KEY", "")
+    RAG_CHUNK_SIZE: int = int(os.getenv("RAG_CHUNK_SIZE", "1000"))
+    RAG_CHUNK_OVERLAP: int = int(os.getenv("RAG_CHUNK_OVERLAP", "150"))
+    CORRECTIVE_RAG_MAX_RETRIES: int = int(os.getenv("CORRECTIVE_RAG_MAX_RETRIES", "3"))
 
     # Microsoft OAuth Settings
     MICROSOFT_CLIENT_ID: str = os.getenv("MICROSOFT_CLIENT_ID", "")
